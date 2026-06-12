@@ -21,8 +21,12 @@ asarUnpack:
   - node_modules/ffmpeg-static/**
 
 # Publish to GitHub Releases. Override per-CI with GH_TOKEN env var.
+# Owner + repo are pinned explicitly so the in-app auto-updater hits the right
+# URL even if package.json drifts.
 publish:
   provider: github
+  owner: superreelone
+  repo: capturesudio
   releaseType: release
 
 # ----------- Windows -----------

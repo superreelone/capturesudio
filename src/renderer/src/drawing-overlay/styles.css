@@ -1,0 +1,216 @@
+:root { color-scheme: dark; }
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, sans-serif;
+  color: #e7ecf3;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.do__root {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.do__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+.do__canvas--pass {
+  cursor: default;
+}
+
+.do__toolbar {
+  position: fixed;
+  background: rgba(20, 24, 29, 0.92);
+  border: 1px solid #2c3340;
+  border-radius: 10px;
+  padding: 6px;
+  display: flex;
+  gap: 4px;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.55);
+  z-index: 10;
+  pointer-events: auto;
+}
+
+/* Default horizontal dock at the top center of the screen. */
+.do__toolbar--dock-top {
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  flex-direction: row;
+  align-items: center;
+  max-width: calc(100vw - 28px);
+  flex-wrap: wrap;
+}
+
+/* Vertical dock on the left edge of the screen, centered vertically. */
+.do__toolbar--dock-left {
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  align-items: center;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+}
+
+/* Vertical dock on the right edge of the screen, centered vertically. */
+.do__toolbar--dock-right {
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  flex-direction: column;
+  align-items: center;
+  max-height: calc(100vh - 28px);
+  overflow-y: auto;
+}
+
+.do__toolbar--pass {
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* In horizontal (top) dock, groups are vertical separators. */
+.do__toolbar--dock-top .do__group {
+  display: flex;
+  flex-direction: row;
+  gap: 2px;
+  padding: 0 4px;
+  border-right: 1px solid #2c3340;
+}
+
+.do__toolbar--dock-top .do__group:last-child {
+  border-right: none;
+}
+
+/* In vertical (left/right) dock, groups stack with horizontal separators. */
+.do__toolbar--dock-left .do__group,
+.do__toolbar--dock-right .do__group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 4px 0;
+  border-bottom: 1px solid #2c3340;
+  width: 100%;
+  align-items: center;
+}
+
+.do__toolbar--dock-left .do__group:last-child,
+.do__toolbar--dock-right .do__group:last-child {
+  border-bottom: none;
+}
+
+.do__btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: #e7ecf3;
+  font-size: 13px;
+  padding: 6px 9px;
+  border-radius: 5px;
+  cursor: pointer;
+  min-width: 32px;
+}
+
+.do__btn:hover:not(:disabled) {
+  border-color: #5b8def;
+}
+
+.do__btn--on {
+  background: #5b8def;
+  color: white;
+  border-color: #5b8def;
+}
+
+.do__btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.do__btn-key {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: 9px;
+  background: rgba(255, 255, 255, 0.12);
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  letter-spacing: 0.4px;
+}
+
+.do__btn--on .do__btn-key {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.do__swatch {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 2px solid #2c3340;
+  cursor: pointer;
+  padding: 0;
+}
+
+.do__swatch--on {
+  border-color: white;
+  box-shadow: 0 0 0 2px #5b8def;
+}
+
+.do__thickness {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.do__thickness-dot {
+  background: currentColor;
+  border-radius: 50%;
+}
+
+.do__mode {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  padding: 0 8px;
+  border-right: 1px solid #2c3340;
+  color: #8a96a6;
+}
+
+.do__mode--draw {
+  color: #5be39b;
+}
+
+.do__hint {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(20, 24, 29, 0.85);
+  border: 1px solid #2c3340;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11px;
+  color: #8a96a6;
+  pointer-events: none;
+}
+
+.do__hint kbd {
+  background: #1b2026;
+  border: 1px solid #2c3340;
+  border-radius: 3px;
+  padding: 1px 5px;
+  font-size: 10px;
+  margin: 0 2px;
+}

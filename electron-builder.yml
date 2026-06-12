@@ -1,0 +1,90 @@
+appId: com.ingestra.capturestudio
+productName: Ingestra-CaptureStudio
+copyright: Copyright © 2026 Ingestra
+
+directories:
+  buildResources: resources
+  output: dist
+
+# Only bundle the compiled output, not the renderer/main sources or dev deps.
+files:
+  - out/**
+  - package.json
+  - '!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme,LICENSE,LICENSE.txt,*.d.ts,docs,test,tests,__tests__,powered-test,example,examples,benchmark,benchmarks,.github,.vscode}'
+  - '!**/{.DS_Store,.git,.hg,.svn,CVS,RCS,SCCS,.gitignore,.gitattributes}'
+  - '!**/{__pycache__,thumbs.db,.flowconfig,.idea,.vs,.nyc_output}'
+  - '!**/{appveyor.yml,.travis.yml,circle.yml}'
+  - '!**/{npm-debug.log,yarn.lock,.lock-wscript,*.log,package-lock.json,pnpm-lock.yaml}'
+
+# Things that must live OUTSIDE the asar (read by the OS or spawned as child procs).
+asarUnpack:
+  - node_modules/ffmpeg-static/**
+
+# Publish to GitHub Releases. Override per-CI with GH_TOKEN env var.
+publish:
+  provider: github
+  releaseType: release
+
+# ----------- Windows -----------
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: resources/icon.ico
+  # Authenticode signing — provide via env vars at build time:
+  #   CSC_LINK            absolute path or HTTPS URL to .p12/.pfx cert
+  #   CSC_KEY_PASSWORD    password for the .p12
+  # Leave the field unset here; electron-builder picks up the env vars automatically.
+  signingHashAlgorithms:
+    - sha256
+  rfc3161TimeStampServer: http://timestamp.digicert.com
+
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  shortcutName: Ingestra-CaptureStudio
+  artifactName: Ingestra-CaptureStudio-${version}-Setup-${arch}.${ext}
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  uninstallDisplayName: Ingestra-CaptureStudio ${version}
+
+# ----------- macOS -----------
+mac:
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+  icon: resources/icon.png
+  category: public.app-category.video
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: resources/entitlements.mac.plist
+  entitlementsInherit: resources/entitlements.mac.plist
+  # Notarization runs only when these env vars are present:
+  #   APPLE_ID                 your Apple ID email
+  #   APPLE_APP_SPECIFIC_PASSWORD  app-specific password
+  #   APPLE_TEAM_ID            10-char Team ID
+  # (electron-builder picks them up automatically; no config needed here.)
+  notarize: false
+  extendInfo:
+    NSCameraUsageDescription: 'Ingestra-CaptureStudio uses the camera for the webcam picture-in-picture overlay during recording.'
+    NSMicrophoneUsageDescription: 'Ingestra-CaptureStudio records your microphone while capturing the screen, if you enable Mic audio.'
+    NSScreenRecordingUsageDescription: 'Ingestra-CaptureStudio records your screen as its core capture function.'
+    NSAppleEventsUsageDescription: 'Ingestra-CaptureStudio uses Apple Events to reveal saved files in Finder.'
+
+dmg:
+  artifactName: Ingestra-CaptureStudio-${version}-${arch}.${ext}
+  sign: false
+
+# ----------- Linux -----------
+linux:
+  target:
+    - target: AppImage
+      arch:
+        - x64
+  icon: resources/icon.png
+  category: AudioVideo
+  artifactName: Ingestra-CaptureStudio-${version}-${arch}.${ext}

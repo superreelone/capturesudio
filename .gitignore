@@ -1,0 +1,22 @@
+node_modules
+out
+dist
+build
+.DS_Store
+*.log
+.env
+.env.local
+.vite
+
+# Vendor signing keys — never commit
+tools/keygen/keys/
+
+# Local-only Claude Code settings (user-specific)
+.claude/settings.local.json
+
+# Personal notes
+VN-Details.docx
+~$*.docx
+
+# TypeScript incremental build cache
+*.tsbuildinfo

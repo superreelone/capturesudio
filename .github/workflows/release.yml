@@ -1,0 +1,88 @@
+# Builds + publishes signed installers for every platform when a tag is pushed.
+#
+#   git tag v1.0.0 && git push origin v1.0.0
+#
+# Required GitHub Actions secrets:
+#   GH_TOKEN                           always — for publishing the release
+#   CSC_LINK_BASE64                    win  — base64 of your .pfx Authenticode cert
+#   CSC_KEY_PASSWORD                   win  — .pfx password
+#   APPLE_ID                           mac  — Apple ID email
+#   APPLE_APP_SPECIFIC_PASSWORD        mac  — app-specific password
+#   APPLE_TEAM_ID                      mac  — 10-char Team ID
+#   CSC_LINK_MAC_BASE64                mac  — base64 of Developer ID Application cert
+#   CSC_KEY_PASSWORD_MAC               mac  — password for the macOS cert
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # --------- decode signing certs from base64 secrets ---------
+
+      - name: Decode Windows cert
+        if: matrix.os == 'windows-latest' && env.CSC_LINK_BASE64 != ''
+        shell: pwsh
+        env:
+          CSC_LINK_BASE64: ${{ secrets.CSC_LINK_BASE64 }}
+        run: |
+          $bytes = [Convert]::FromBase64String($env:CSC_LINK_BASE64)
+          $path = Join-Path $env:RUNNER_TEMP 'win-cert.pfx'
+          [IO.File]::WriteAllBytes($path, $bytes)
+          echo "CSC_LINK=$path" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+      - name: Decode macOS cert
+        if: matrix.os == 'macos-latest' && env.CSC_LINK_MAC_BASE64 != ''
+        env:
+          CSC_LINK_MAC_BASE64: ${{ secrets.CSC_LINK_MAC_BASE64 }}
+        run: |
+          echo "$CSC_LINK_MAC_BASE64" | base64 -d > "$RUNNER_TEMP/mac-cert.p12"
+          echo "CSC_LINK=$RUNNER_TEMP/mac-cert.p12" >> "$GITHUB_ENV"
+
+      # --------- build + publish ---------
+
+      - name: Build + publish (Windows)
+        if: matrix.os == 'windows-latest'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          CSC_LINK: ${{ env.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        run: npm run release -- --win
+
+      - name: Build + publish (macOS)
+        if: matrix.os == 'macos-latest'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+          CSC_LINK: ${{ env.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD_MAC }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: npm run release -- --mac
+
+      - name: Build + publish (Linux)
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
+        run: npm run release -- --linux

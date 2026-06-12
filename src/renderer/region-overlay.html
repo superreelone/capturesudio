@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: http://localhost:* https://localhost:*"
+    />
+    <title>Select region</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100vh;
+        width: 100vw;
+        min-height: 100vh;
+        min-width: 100vw;
+        background: transparent;
+        overflow: hidden;
+        cursor: crosshair;
+        user-select: none;
+        -webkit-user-select: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #fff;
+      }
+      .dim {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.45);
+        pointer-events: none;
+      }
+      #dim-top    { top: 0; left: 0; right: 0; height: 100%; }
+      #dim-bottom { display: none; }
+      #dim-left   { display: none; }
+      #dim-right  { display: none; }
+      #selection {
+        position: fixed;
+        border: 1.5px solid #5b8def;
+        box-sizing: border-box;
+        display: none;
+        pointer-events: none;
+      }
+      .handle {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background: #5b8def;
+        border: 1.5px solid #fff;
+        border-radius: 2px;
+        box-sizing: border-box;
+      }
+      .h-tl { top: -6px; left: -6px; }
+      .h-tr { top: -6px; right: -6px; }
+      .h-bl { bottom: -6px; left: -6px; }
+      .h-br { bottom: -6px; right: -6px; }
+      .h-t  { top: -6px; left: 50%; transform: translateX(-50%); }
+      .h-b  { bottom: -6px; left: 50%; transform: translateX(-50%); }
+      .h-l  { top: 50%; left: -6px; transform: translateY(-50%); }
+      .h-r  { top: 50%; right: -6px; transform: translateY(-50%); }
+      #readout {
+        position: fixed;
+        background: rgba(20, 24, 29, 0.95);
+        border: 1px solid #232932;
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 11px;
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        pointer-events: none;
+        display: none;
+        white-space: nowrap;
+        max-width: 360px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .hud__current { min-width: 220px; }
+      #hud {
+        position: fixed;
+        top: 14px;
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(20, 24, 29, 0.92);
+        border: 1px solid #232932;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 12px;
+        pointer-events: none;
+        display: flex;
+        gap: 14px;
+        align-items: center;
+      }
+      kbd {
+        background: #1b2026;
+        border: 1px solid #232932;
+        border-radius: 3px;
+        padding: 1px 5px;
+        font-size: 11px;
+        margin: 0 2px;
+      }
+      .hud__hint { color: #8a96a6; }
+      #toolbar {
+        position: fixed;
+        background: rgba(20, 24, 29, 0.95);
+        border: 1px solid #232932;
+        border-radius: 6px;
+        padding: 4px;
+        display: none;
+        gap: 4px;
+      }
+      #toolbar button {
+        background: transparent;
+        color: #fff;
+        border: 1px solid transparent;
+        border-radius: 4px;
+        padding: 4px 10px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      #toolbar button.primary {
+        background: #5b8def;
+        border-color: #5b8def;
+      }
+      #toolbar button:hover { border-color: #5b8def; }
+    </style>
+  </head>
+  <body>
+    <div id="dim-top" class="dim"></div>
+    <div id="dim-bottom" class="dim"></div>
+    <div id="dim-left" class="dim"></div>
+    <div id="dim-right" class="dim"></div>
+
+    <div id="selection">
+      <span class="handle h-tl"></span>
+      <span class="handle h-tr"></span>
+      <span class="handle h-bl"></span>
+      <span class="handle h-br"></span>
+      <span class="handle h-t"></span>
+      <span class="handle h-b"></span>
+      <span class="handle h-l"></span>
+      <span class="handle h-r"></span>
+    </div>
+
+    <div id="readout"></div>
+
+    <div id="toolbar">
+      <button id="confirm" class="primary">Capture</button>
+      <button id="cancel">Cancel</button>
+    </div>
+
+    <div id="hud">
+      <span>Drag to select · release to capture</span>
+      <span class="hud__current hud__hint">Hovering: …</span>
+      <span class="hud__hint"><kbd>Esc</kbd> cancel · <kbd>Shift</kbd> square</span>
+    </div>
+
+    <script type="module" src="/src/region-overlay.ts"></script>
+  </body>
+</html>

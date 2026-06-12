@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: http://localhost:* https://localhost:*"
+    />
+    <title>Countdown</title>
+    <style>
+      :root { color-scheme: dark; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        width: 100%;
+        background: transparent;
+        overflow: hidden;
+        pointer-events: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        color: #fff;
+        display: grid;
+        place-items: center;
+      }
+      #num {
+        font-size: 280px;
+        font-weight: 700;
+        line-height: 1;
+        text-shadow: 0 8px 36px rgba(0, 0, 0, 0.7), 0 0 80px rgba(91, 141, 239, 0.5);
+        animation: pop 1s ease-in-out;
+        background: radial-gradient(circle, rgba(20, 24, 29, 0.85), rgba(20, 24, 29, 0));
+        padding: 40px 70px;
+        border-radius: 24px;
+      }
+      @keyframes pop {
+        0%   { transform: scale(0.6); opacity: 0; }
+        20%  { transform: scale(1.1); opacity: 1; }
+        100% { transform: scale(1); opacity: 1; }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="num"></div>
+    <script type="module" src="/src/countdown.ts"></script>
+  </body>
+</html>

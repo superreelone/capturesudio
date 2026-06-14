@@ -155,6 +155,10 @@ export interface IpcContract {
       bounds: { x: number; y: number; width: number; height: number };
     }>;
   };
+  [IpcChannel.DrawingSetIgnoreMouseEvents]: {
+    request: { ignore: boolean };
+    response: void;
+  };
 
   [IpcChannel.LicenseStatus]: { request: void; response: LicenseStatus };
   [IpcChannel.LicenseActivate]: {

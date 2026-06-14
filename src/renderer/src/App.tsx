@@ -306,7 +306,14 @@ export function App(): JSX.Element {
       </main>
 
       <footer className="app__footer">
-        <span>contextIsolation · sandbox · no nodeIntegration</span>
+        <span>
+          contextIsolation · sandbox · no nodeIntegration
+          {version && (
+            <>
+              {' · '}v{version.version}
+            </>
+          )}
+        </span>
         <span className="app__footer-hint">
           Press <kbd>?</kbd> for shortcuts
         </span>

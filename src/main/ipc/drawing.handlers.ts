@@ -8,6 +8,7 @@ import {
   hideOverlay,
   listDisplays,
   moveToDisplay,
+  setOverlayIgnoreMouseEvents,
   setRecording,
   setTool,
   showOverlay,
@@ -46,6 +47,12 @@ export function registerDrawingHandlers(): void {
     moveToDisplay(req.displayId)
   );
   ipcMain.handle(IpcChannel.DrawingListDisplays, () => listDisplays());
+  ipcMain.handle(
+    IpcChannel.DrawingSetIgnoreMouseEvents,
+    (_e, req: { ignore: boolean }) => {
+      setOverlayIgnoreMouseEvents(Boolean(req?.ignore));
+    }
+  );
   ipcMain.handle(IpcChannel.DrawingState, () => getState());
   log.info('drawing handlers registered');
 }

@@ -139,6 +139,8 @@ export function SettingsPanel({
           onChange={(v) => void onUpdate({ hideDrawingToolbarWhileRecording: v })}
           hint="Off (default) keeps the floating drawing toolbar + cursor visible in the captured video, which is usually what you want for tutorials. Turn this on for clean takes where strokes appear without UI chrome."
         />
+      </div>
+      <div className="settings__row">
         <Toggle
           label="Capture compatibility mode (Windows)"
           value={settings.captureCompatibilityMode}

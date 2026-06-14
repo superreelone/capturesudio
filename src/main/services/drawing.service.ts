@@ -235,6 +235,19 @@ export function moveToDisplay(displayId: number): DrawingState {
   return getState();
 }
 
+/**
+ * Direct setter the renderer uses to fine-tune mouse-event handling during
+ * PASS mode: when the cursor is over the toolbar we set ignore=false (so the
+ * toolbar receives clicks), and when it leaves the toolbar we set ignore=true
+ * (so clicks pass through to whatever's being recorded). Without this, PASS
+ * mode would make the toolbar unclickable and the user couldn't switch to
+ * DRAW mode from inside the overlay.
+ */
+export function setOverlayIgnoreMouseEvents(ignore: boolean): void {
+  if (!overlay || overlay.isDestroyed()) return;
+  overlay.setIgnoreMouseEvents(ignore, { forward: true });
+}
+
 /** List displays so the renderer can render a picker without enumerating itself. */
 export function listDisplays(): Array<{
   id: number;

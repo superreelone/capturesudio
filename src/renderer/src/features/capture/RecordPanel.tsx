@@ -355,7 +355,10 @@ export function RecordPanel({
       selectedSource?.displayId ??
       displays.find((d) => d.isPrimary)?.id ??
       displays[0]?.id;
-    await window.api.drawing.show({ displayId: recordingDisplayId });
+    // Open in PASS mode so the toolbar appears but clicks still pass through
+    // to whatever's being recorded. The user enters DRAW mode by clicking a
+    // tool button on the toolbar (or pressing P/H/A/L/R/O/E).
+    await window.api.drawing.show({ displayId: recordingDisplayId, mode: 'pass' });
   }
 
   async function closeDrawingOverlay(): Promise<void> {

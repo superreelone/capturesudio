@@ -235,6 +235,47 @@ export function DrawingOverlay(): JSX.Element {
   // suppress unused warning for drawOpOnto on hot reload; reference here.
   void drawOpOnto;
 
+  // Picking a tool in PASS mode also flips you into DRAW mode — that's the
+  // natural intent (you're saying "I want to use this tool now"). Picking a
+  // color or thickness does NOT — those just configure the upcoming stroke
+  // without taking over click-through behaviour.
+  const pickTool = useCallback(
+    (t: Tool) => {
+      setTool(t);
+      if (mode === 'pass') void overlay?.toggleMode();
+    },
+    [mode, overlay]
+  );
+
+  // Hover-aware mouse pass-through. In DRAW mode the overlay is always
+  // interactive. In PASS mode we want clicks to fall through to the underlying
+  // app EXCEPT when the cursor is over the toolbar — otherwise the toolbar
+  // becomes unclickable and the user has no way back to DRAW mode short of a
+  // global hotkey. We use the `forward: true` mousemove forwarding that's
+  // already enabled when ignoreMouseEvents is true, plus elementFromPoint to
+  // figure out whether the cursor sits over the toolbar right now, and flip
+  // the OS-level ignore on every transition.
+  useEffect(() => {
+    if (!overlay) return;
+    if (mode === 'draw') {
+      void overlay.setIgnoreMouseEvents(false);
+      return;
+    }
+    let lastOverChrome = false;
+    void overlay.setIgnoreMouseEvents(true);
+    function onMove(e: MouseEvent): void {
+      const el = document.elementFromPoint(e.clientX, e.clientY);
+      const overChrome =
+        !!el?.closest('.do__toolbar') || !!el?.closest('.do__hint');
+      if (overChrome !== lastOverChrome) {
+        lastOverChrome = overChrome;
+        void overlay?.setIgnoreMouseEvents(!overChrome);
+      }
+    }
+    document.addEventListener('mousemove', onMove);
+    return () => document.removeEventListener('mousemove', onMove);
+  }, [mode, overlay]);
+
   return (
     <div className={`do__root${recording ? ' do__root--recording' : ''}`}>
       <canvas
@@ -256,7 +297,7 @@ export function DrawingOverlay(): JSX.Element {
             <button
               key={t}
               className={`do__btn${tool === t ? ' do__btn--on' : ''}`}
-              onClick={() => setTool(t)}
+              onClick={() => pickTool(t)}
               title={`${TOOL_LABELS[t]} (${TOOL_KEYS[t]})`}
             >
               {TOOL_LABELS[t].split(' ')[0]}

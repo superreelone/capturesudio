@@ -78,16 +78,10 @@ html, body, #root {
 }
 
 .do__toolbar--pass {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-/* The Close (X) button stays clickable even when the rest of the toolbar is
-   in pass-through mode, so the user can always escape the overlay without
-   having to find a keyboard shortcut. */
-.do__toolbar--pass .do__btn--close {
-  pointer-events: auto;
-  opacity: 1;
+  opacity: 0.45;
+  /* pointer-events stays 'auto' so elementFromPoint() can detect cursor hover
+     and the renderer can flip Electron's setIgnoreMouseEvents accordingly.
+     Click pass-through in PASS mode is enforced at the OS level, not in CSS. */
 }
 
 /* In horizontal (top) dock, groups are vertical separators. */

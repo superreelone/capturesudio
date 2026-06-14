@@ -36,6 +36,7 @@ interface DrawingOverlayApi {
   hide(): Promise<void>;
   toggleMode(): Promise<DrawingState>;
   cycleDisplay(): Promise<DrawingState>;
+  setIgnoreMouseEvents(ignore: boolean): Promise<void>;
   onState(cb: (s: DrawingState) => void): () => void;
   onClear(cb: () => void): () => void;
   onUndo(cb: () => void): () => void;

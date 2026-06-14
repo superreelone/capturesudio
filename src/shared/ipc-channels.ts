@@ -42,6 +42,7 @@ export const IpcChannel = {
   DrawingCycleDisplay: 'drawing:cycleDisplay',
   DrawingMoveToDisplay: 'drawing:moveToDisplay',
   DrawingListDisplays: 'drawing:listDisplays',
+  DrawingSetIgnoreMouseEvents: 'drawing:setIgnoreMouseEvents',
 
   LicenseStatus: 'license:status',
   LicenseActivate: 'license:activate',

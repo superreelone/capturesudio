@@ -281,6 +281,8 @@ const drawingOverlay = drawingOverlayDisplay
       toggleMode: (): Promise<DrawingState> => ipcRenderer.invoke(IpcChannel.DrawingToggleMode),
       cycleDisplay: (): Promise<DrawingState> =>
         ipcRenderer.invoke(IpcChannel.DrawingCycleDisplay),
+      setIgnoreMouseEvents: (ignore: boolean): Promise<void> =>
+        ipcRenderer.invoke(IpcChannel.DrawingSetIgnoreMouseEvents, { ignore }),
       onState: (cb: (s: DrawingState) => void): (() => void) => {
         const listener = (_e: Electron.IpcRendererEvent, s: DrawingState): void => cb(s);
         ipcRenderer.on('drawing-overlay:state', listener);

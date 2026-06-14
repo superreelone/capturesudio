@@ -24,6 +24,29 @@ function broadcastState(): void {
   }
 }
 
+/**
+ * Whether we minimised the main window because the overlay opened. We only
+ * restore on close if we were the one who minimised it (don't pop up a window
+ * the user manually minimised).
+ */
+let didMinimiseMainForOverlay = false;
+
+function minimiseMainForOverlay(): void {
+  const main = mainWindowAccessor();
+  if (!main || main.isDestroyed()) return;
+  if (main.isMinimized()) return;
+  main.minimize();
+  didMinimiseMainForOverlay = true;
+}
+
+function restoreMainAfterOverlay(): void {
+  if (!didMinimiseMainForOverlay) return;
+  const main = mainWindowAccessor();
+  didMinimiseMainForOverlay = false;
+  if (!main || main.isDestroyed()) return;
+  if (main.isMinimized()) main.restore();
+}
+
 export function getState(): DrawingState {
   return {
     open: overlay !== null && !overlay.isDestroyed(),
@@ -92,10 +115,15 @@ export function showOverlay(displayId?: number, initialMode: DrawingMode = 'draw
   overlay.setAlwaysOnTop(true, 'screen-saver');
   applyMouseEvents(overlay, currentMode);
 
+  // Minimise the main window so the user can still find it in the taskbar
+  // while the fullscreen transparent overlay covers their screen.
+  minimiseMainForOverlay();
+
   overlay.on('closed', () => {
     overlay = null;
     currentDisplayId = null;
     broadcastState();
+    restoreMainAfterOverlay();
   });
 
   const devUrl = process.env['ELECTRON_RENDERER_URL'];

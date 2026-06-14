@@ -204,9 +204,12 @@ export function DrawingOverlay(): JSX.Element {
         e.preventDefault();
         cycleDock();
       } else if (e.key === 'Escape') {
-        // Toggle to PASS mode so user can interact with what's underneath.
+        // From DRAW mode: switch to PASS so the user can click underlying app.
+        // From PASS mode: close the overlay entirely (so a single Esc-Esc
+        // gets you out without hunting for the toolbar Close button).
         e.preventDefault();
-        void overlay?.toggleMode();
+        if (mode === 'pass') void overlay?.hide();
+        else void overlay?.toggleMode();
       } else if (!ctrl && !e.altKey) {
         // Single-letter tool keys.
         const map: Record<string, Tool> = {
@@ -317,7 +320,11 @@ export function DrawingOverlay(): JSX.Element {
           <button className="do__btn" onClick={() => void overlay?.toggleMode()}>
             {mode === 'draw' ? '👆 Pass' : '✏️ Draw'}
           </button>
-          <button className="do__btn" onClick={() => void overlay?.hide()} title="Close">
+          <button
+            className="do__btn do__btn--close"
+            onClick={() => void overlay?.hide()}
+            title="Close drawing overlay (Esc Esc)"
+          >
             ✕
           </button>
         </div>

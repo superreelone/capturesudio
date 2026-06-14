@@ -139,6 +139,12 @@ export function SettingsPanel({
           onChange={(v) => void onUpdate({ hideDrawingToolbarWhileRecording: v })}
           hint="Off (default) keeps the floating drawing toolbar + cursor visible in the captured video, which is usually what you want for tutorials. Turn this on for clean takes where strokes appear without UI chrome."
         />
+        <Toggle
+          label="Capture compatibility mode (Windows)"
+          value={settings.captureCompatibilityMode}
+          onChange={(v) => void onUpdate({ captureCompatibilityMode: v })}
+          hint="On (default) — forces the older but more stable DXGI desktop-duplication backend. Fixes recordings that freeze on the first frame or capture failures (HRESULT 0x887A0026 'keyed mutex abandoned'). Requires app restart to take effect."
+        />
       </div>
 
       <h2>Output</h2>

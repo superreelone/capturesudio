@@ -1,5 +1,6 @@
 import { app, BrowserWindow, shell } from 'electron';
 import { join } from 'node:path';
+import { readFileSync } from 'node:fs';
 import { registerAllIpcHandlers } from './ipc/registry';
 import { bootstrapOutputFolders } from './services/settings.store';
 import { cleanupTempOnQuit } from './services/recording-session.service';
@@ -36,6 +37,53 @@ import { createLogger } from './util/logger';
 registerLocalMediaSchemeAsPrivileged();
 
 const log = createLogger('main');
+
+// Apply Chromium feature flags BEFORE app.whenReady fires. These flags fix
+// common screen-capture freezes on Windows:
+//
+//   CalculateNativeWinOcclusion: when our main window gets fully covered by
+//     the transparent drawing overlay, Chromium otherwise "optimises away"
+//     occluded surfaces and the desktop-duplication pipeline stalls, leaving
+//     the recording with only the first frame.
+//
+//   AllowWgc* / WebRtcAllowWgc*: the Windows.Graphics.Capture backend on
+//     Windows 10/11 occasionally hangs with HRESULT 0x887A0026
+//     ("keyed mutex abandoned"). Disabling it forces the older DXGI Desktop
+//     Duplication path which is more reliable across driver versions.
+//
+// captureCompatibilityMode (default ON for new installs) controls whether the
+// WGC disables are applied. Settings are read directly from settings.json
+// because electron-store can't be loaded before app.whenReady.
+function readCaptureCompatibilityModeSync(): boolean {
+  try {
+    const appData =
+      process.platform === 'win32'
+        ? process.env['APPDATA']
+        : process.platform === 'darwin'
+          ? join(process.env['HOME'] ?? '', 'Library', 'Application Support')
+          : join(process.env['HOME'] ?? '', '.config');
+    if (!appData) return true;
+    const path = join(appData, 'Ingestra-CaptureStudio', 'settings.json');
+    const json = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
+    if (typeof json['captureCompatibilityMode'] === 'boolean') {
+      return json['captureCompatibilityMode'];
+    }
+  } catch {
+    // file missing or invalid — first launch; use default.
+  }
+  return true;
+}
+
+const disabledFeatures = ['CalculateNativeWinOcclusion'];
+if (process.platform === 'win32' && readCaptureCompatibilityModeSync()) {
+  disabledFeatures.push(
+    'AllowWgcDesktopCapturer',
+    'AllowWgcScreenCapturer',
+    'WebRtcAllowWgcDesktopCapturer',
+    'WebRtcAllowWgcScreenCapturer'
+  );
+}
+app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
 
 const isDev = !app.isPackaged;
 

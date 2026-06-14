@@ -136,8 +136,10 @@ export function App(): JSX.Element {
         shotSeq += 1;
         setPendingScreenshot({ action, seq: shotSeq });
       } else if (action === 'toggleDrawing') {
+        // Open if closed; close entirely if already open. (Mode toggle is
+        // available separately inside the overlay via Ctrl+Shift+D or Esc.)
         const state = await window.api.drawing.state();
-        if (state.open) await window.api.drawing.toggleMode();
+        if (state.open) await window.api.drawing.hide();
         else await window.api.drawing.show({});
       } else if (
         action === 'drawPen' ||

@@ -126,6 +126,7 @@ export const SettingsSchema = z.object({
   webcamBackgroundBlurPx: z.number().int().min(2).max(40),
   webcamBackgroundImagePath: z.string(),
   hideDrawingToolbarWhileRecording: z.boolean(),
+  captureCompatibilityMode: z.boolean(),
   bluetoothPenAction: BluetoothPenActionSchema,
   bluetoothPenDebounceMs: z.number().int().min(0).max(2000),
   crashReporterEnabled: z.boolean()
@@ -192,6 +193,7 @@ export function buildDefaultSettings(paths: {
     webcamBackgroundBlurPx: 14,
     webcamBackgroundImagePath: '',
     hideDrawingToolbarWhileRecording: false,
+    captureCompatibilityMode: true,
     bluetoothPenAction: 'toggleDrawing',
     bluetoothPenDebounceMs: 250,
     crashReporterEnabled: false

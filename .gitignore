@@ -17,6 +17,8 @@ tools/keygen/keys/
 # Personal notes
 VN-Details.docx
 ~$*.docx
+*don't share*
+windows installation instructions*.docx
 
 # TypeScript incremental build cache
 *.tsbuildinfo

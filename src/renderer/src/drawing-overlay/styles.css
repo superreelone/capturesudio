@@ -82,6 +82,14 @@ html, body, #root {
   pointer-events: none;
 }
 
+/* The Close (X) button stays clickable even when the rest of the toolbar is
+   in pass-through mode, so the user can always escape the overlay without
+   having to find a keyboard shortcut. */
+.do__toolbar--pass .do__btn--close {
+  pointer-events: auto;
+  opacity: 1;
+}
+
 /* In horizontal (top) dock, groups are vertical separators. */
 .do__toolbar--dock-top .do__group {
   display: flex;

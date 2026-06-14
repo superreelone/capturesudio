@@ -21,18 +21,47 @@ const MODEL_URL =
 
 let segmenterPromise: Promise<ImageSegmenter> | null = null;
 
+/** Hard cap on segmenter load so a dead CDN doesn't hang the webcam preview
+ *  forever. useWebcam catches the rejection and falls back to the raw stream. */
+const SEGMENTER_LOAD_TIMEOUT_MS = 10_000;
+
 /** Lazy-load + cache the segmenter so multiple processors share one instance. */
 function getSegmenter(): Promise<ImageSegmenter> {
   if (segmenterPromise) return segmenterPromise;
-  segmenterPromise = (async () => {
+  const load = (async () => {
     const fileset = await FilesetResolver.forVisionTasks(WASM_URL);
     return ImageSegmenter.createFromOptions(fileset, {
-      baseOptions: { modelAssetPath: MODEL_URL, delegate: 'GPU' },
+      baseOptions: {
+        modelAssetPath: MODEL_URL,
+        // CPU delegate: a touch slower than GPU but doesn't compete with the
+        // Chromium screen-capture pipeline for the same D3D11 resources. On
+        // Windows, running MediaPipe with the GPU delegate alongside DXGI/WGC
+        // capture in the same renderer was contending for GPU and producing
+        // frozen-frame recordings.
+        delegate: 'CPU'
+      },
       runningMode: 'VIDEO',
       outputCategoryMask: true,
       outputConfidenceMasks: false
     });
   })();
+  segmenterPromise = Promise.race([
+    load,
+    new Promise<ImageSegmenter>((_resolve, reject) => {
+      setTimeout(
+        () =>
+          reject(
+            new Error(`MediaPipe segmenter load timed out after ${SEGMENTER_LOAD_TIMEOUT_MS}ms`)
+          ),
+        SEGMENTER_LOAD_TIMEOUT_MS
+      );
+    })
+  ]).catch((err) => {
+    // Clear the cached rejection so a future toggle can retry instead of
+    // immediately re-failing with the same stale error.
+    segmenterPromise = null;
+    throw err;
+  });
   return segmenterPromise;
 }
 

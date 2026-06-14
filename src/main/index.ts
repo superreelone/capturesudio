@@ -62,7 +62,7 @@ function readCaptureCompatibilityModeSync(): boolean {
         : process.platform === 'darwin'
           ? join(process.env['HOME'] ?? '', 'Library', 'Application Support')
           : join(process.env['HOME'] ?? '', '.config');
-    if (!appData) return true;
+    if (!appData) return false;
     const path = join(appData, 'Ingestra-CaptureStudio', 'settings.json');
     const json = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>;
     if (typeof json['captureCompatibilityMode'] === 'boolean') {
@@ -71,7 +71,12 @@ function readCaptureCompatibilityModeSync(): boolean {
   } catch {
     // file missing or invalid — first launch; use default.
   }
-  return true;
+  // Default OFF: WGC is the modern Windows screen-capture backend and works
+  // on most setups. v0.1.1 shipped this defaulted ON (forcing DXGI fallback)
+  // which regressed laptops where WGC was the only working backend. Users
+  // hitting DXGI "keyed mutex abandoned" errors can opt in via
+  // Settings → Capture → Capture compatibility mode.
+  return false;
 }
 
 // Universally helpful: never throttle the renderer (capture stops emitting

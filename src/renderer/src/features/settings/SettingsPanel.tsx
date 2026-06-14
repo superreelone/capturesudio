@@ -143,7 +143,7 @@ export function SettingsPanel({
           label="Capture compatibility mode (Windows)"
           value={settings.captureCompatibilityMode}
           onChange={(v) => void onUpdate({ captureCompatibilityMode: v })}
-          hint="On (default) — forces the older but more stable DXGI desktop-duplication backend. Fixes recordings that freeze on the first frame or capture failures (HRESULT 0x887A0026 'keyed mutex abandoned'). Requires app restart to take effect."
+          hint="Off (default) — uses the modern Windows.Graphics.Capture (WGC) backend, which works on most setups. Turn this On only if your recordings are freezing on the first frame, or if you see HRESULT 0x887A0026 'keyed mutex abandoned' errors. It forces the older DXGI Desktop Duplication backend, which is slower but more reliable on some hardware. Requires app restart to take effect."
         />
       </div>
 

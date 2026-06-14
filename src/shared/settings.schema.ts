@@ -193,7 +193,7 @@ export function buildDefaultSettings(paths: {
     webcamBackgroundBlurPx: 14,
     webcamBackgroundImagePath: '',
     hideDrawingToolbarWhileRecording: false,
-    captureCompatibilityMode: true,
+    captureCompatibilityMode: false,
     bluetoothPenAction: 'toggleDrawing',
     bluetoothPenDebounceMs: 250,
     crashReporterEnabled: false

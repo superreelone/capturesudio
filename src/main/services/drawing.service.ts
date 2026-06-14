@@ -25,26 +25,26 @@ function broadcastState(): void {
 }
 
 /**
- * Whether we minimised the main window because the overlay opened. We only
- * restore on close if we were the one who minimised it (don't pop up a window
- * the user manually minimised).
+ * Whether we hid the main window because the overlay opened. We only restore
+ * on close if we were the one who hid it (don't pop up a window the user
+ * manually closed).
  */
-let didMinimiseMainForOverlay = false;
+let didHideMainForOverlay = false;
 
-function minimiseMainForOverlay(): void {
+function hideMainForOverlay(): void {
   const main = mainWindowAccessor();
   if (!main || main.isDestroyed()) return;
-  if (main.isMinimized()) return;
-  main.minimize();
-  didMinimiseMainForOverlay = true;
+  if (!main.isVisible()) return;
+  main.hide();
+  didHideMainForOverlay = true;
 }
 
 function restoreMainAfterOverlay(): void {
-  if (!didMinimiseMainForOverlay) return;
+  if (!didHideMainForOverlay) return;
   const main = mainWindowAccessor();
-  didMinimiseMainForOverlay = false;
+  didHideMainForOverlay = false;
   if (!main || main.isDestroyed()) return;
-  if (main.isMinimized()) main.restore();
+  if (!main.isVisible()) main.show();
 }
 
 export function getState(): DrawingState {
@@ -112,12 +112,16 @@ export function showOverlay(displayId?: number, initialMode: DrawingMode = 'draw
     }
   });
 
-  overlay.setAlwaysOnTop(true, 'screen-saver');
+  // 'floating' sits above normal app windows but BELOW the Windows taskbar
+  // and Start menu. We previously used 'screen-saver' which covered the
+  // taskbar too, so the user couldn't get back to the minimised main window.
+  overlay.setAlwaysOnTop(true, 'floating');
   applyMouseEvents(overlay, currentMode);
 
-  // Minimise the main window so the user can still find it in the taskbar
-  // while the fullscreen transparent overlay covers their screen.
-  minimiseMainForOverlay();
+  // Hide the main window entirely while drawing is active. On a single-display
+  // laptop the fullscreen transparent overlay would otherwise visually cover
+  // it. The overlay's close ('closed' event below) brings it back.
+  hideMainForOverlay();
 
   overlay.on('closed', () => {
     overlay = null;

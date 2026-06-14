@@ -74,16 +74,33 @@ function readCaptureCompatibilityModeSync(): boolean {
   return true;
 }
 
-const disabledFeatures = ['CalculateNativeWinOcclusion'];
-if (process.platform === 'win32' && readCaptureCompatibilityModeSync()) {
-  disabledFeatures.push(
-    'AllowWgcDesktopCapturer',
-    'AllowWgcScreenCapturer',
-    'WebRtcAllowWgcDesktopCapturer',
-    'WebRtcAllowWgcScreenCapturer'
-  );
-}
-app.commandLine.appendSwitch('disable-features', disabledFeatures.join(','));
+// Universally helpful: never throttle the renderer (capture stops emitting
+// frames when the renderer is backgrounded by the OS) and never optimise
+// occluded windows away (the transparent always-on-top drawing overlay would
+// otherwise let Chromium mark the capture source as "hidden" and pause it).
+app.commandLine.appendSwitch(
+  'disable-features',
+  [
+    'CalculateNativeWinOcclusion',
+    ...(process.platform === 'win32' && readCaptureCompatibilityModeSync()
+      ? [
+          // Different Chromium versions name the WGC backend differently; we
+          // disable every spelling we've seen across Chromium 100-130 so the
+          // capturer falls back to the older but more stable DXGI path.
+          'AllowWgcCapturer',
+          'AllowWgcDesktopCapturer',
+          'AllowWgcScreenCapturer',
+          'WebRtcAllowWgcCapturer',
+          'WebRtcAllowWgcDesktopCapturer',
+          'WebRtcAllowWgcScreenCapturer',
+          'Win10WgcCapturer'
+        ]
+      : [])
+  ].join(',')
+);
+app.commandLine.appendSwitch('disable-renderer-backgrounding');
+app.commandLine.appendSwitch('disable-background-timer-throttling');
+app.commandLine.appendSwitch('disable-backgrounding-occluded-windows');
 
 const isDev = !app.isPackaged;
 

@@ -133,7 +133,14 @@ function createMainWindow(): BrowserWindow {
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
-      webSecurity: true
+      webSecurity: true,
+      // CRITICAL for recording: when the user clicks into the app they're
+      // recording, our window goes "background" and Chromium would otherwise
+      // throttle/pause requestAnimationFrame + timers. The composite canvas
+      // would freeze on its last frame and the MediaRecorder would emit a
+      // frozen video. Setting this to false keeps the renderer running at
+      // full speed no matter where focus is.
+      backgroundThrottling: false
     }
   });
 

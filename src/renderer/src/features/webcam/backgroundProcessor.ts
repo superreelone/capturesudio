@@ -166,10 +166,8 @@ export async function createBackgroundProcessor(
     void loadReplacementImage(options.imageUrl);
   }
 
-  let raf = 0;
+  let timer = 0;
   let disposed = false;
-  let lastFrameTime = 0;
-  const minFrameInterval = 1000 / Math.max(15, options.targetFps);
 
   function paintBackground(): void {
     if (options.mode === 'blur') {
@@ -236,13 +234,8 @@ export async function createBackgroundProcessor(
     mask.close();
   }
 
-  function loop(now: number): void {
+  function loop(): void {
     if (disposed) return;
-    raf = requestAnimationFrame(loop);
-
-    if (now - lastFrameTime < minFrameInterval) return;
-    lastFrameTime = now;
-
     if (video.readyState < 2 || video.videoWidth === 0) return;
 
     // Resize if the source video changes dimensions (rare but possible if device swaps).
@@ -260,14 +253,18 @@ export async function createBackgroundProcessor(
     // Capture the current video frame for both color sample + segmentation.
     frameCtx.drawImage(video, 0, 0, W, H);
     try {
-      const result = segmenter.segmentForVideo(video, now);
+      const result = segmenter.segmentForVideo(video, performance.now());
       compositeMaskedFrame(result);
     } catch (err) {
       console.warn('segmentForVideo failed; passing through', err);
       outCtx.drawImage(video, 0, 0, W, H);
     }
   }
-  raf = requestAnimationFrame(loop);
+  // setInterval, not requestAnimationFrame — see composite.ts for why. The
+  // interval is sized so the segmenter actually has time to run on CPU
+  // delegate (a single frame takes 30-80ms on a typical laptop).
+  const intervalMs = Math.max(33, Math.round(1000 / Math.max(15, options.targetFps)));
+  timer = window.setInterval(loop, intervalMs);
 
   const stream = outCanvas.captureStream(Math.max(15, options.targetFps));
 
@@ -281,7 +278,7 @@ export async function createBackgroundProcessor(
     dispose() {
       if (disposed) return;
       disposed = true;
-      cancelAnimationFrame(raf);
+      if (timer) window.clearInterval(timer);
       try {
         video.pause();
       } catch {

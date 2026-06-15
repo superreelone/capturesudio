@@ -120,7 +120,7 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
   const base = prepareVideo(opts.baseStream);
   const cam = opts.webcamStream ? prepareVideo(opts.webcamStream) : null;
 
-  let raf = 0;
+  let timer = 0;
   let disposed = false;
 
   // Pre-compute base draw rect (region crop, in physical pixels of source video).
@@ -197,9 +197,15 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
       ctx.restore();
     }
 
-    raf = requestAnimationFrame(draw);
   }
-  raf = requestAnimationFrame(draw);
+  // setInterval, not requestAnimationFrame: rAF gets paused by Chromium
+  // when our window loses focus or gets occluded by the app being recorded.
+  // setInterval keeps firing (backgroundThrottling: false on the BrowserWindow
+  // makes sure of that), so the composite canvas keeps getting updated and
+  // the captured MediaStream produces real frames instead of freezing.
+  const intervalMs = Math.max(8, Math.round(1000 / opts.fps));
+  timer = window.setInterval(draw, intervalMs);
+  draw();
 
   const stream = canvas.captureStream(opts.fps);
 
@@ -215,7 +221,7 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
     dispose: () => {
       if (disposed) return;
       disposed = true;
-      cancelAnimationFrame(raf);
+      if (timer) window.clearInterval(timer);
       base.stop();
       cam?.stop();
       for (const t of stream.getTracks()) t.stop();

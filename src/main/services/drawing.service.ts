@@ -108,6 +108,9 @@ export function showOverlay(displayId?: number, initialMode: DrawingMode = 'draw
       contextIsolation: true,
       nodeIntegration: false,
       sandbox: true,
+      // Match the main window — keep timers/rAF running even when this
+      // overlay isn't the focused window.
+      backgroundThrottling: false,
       additionalArguments: [`--drawing-overlay-display=${display.id}`]
     }
   });

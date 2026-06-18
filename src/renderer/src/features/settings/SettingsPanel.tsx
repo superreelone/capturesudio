@@ -149,6 +149,69 @@ export function SettingsPanel({
         />
       </div>
 
+      <h2>Captions</h2>
+      <div className="settings__col">
+        <Toggle
+          label="Auto-generate captions"
+          value={settings.captionsEnabled}
+          onChange={(v) => void onUpdate({ captionsEnabled: v })}
+          hint="When ON, each recording is automatically transcribed using local Whisper AI (no cloud, no API key). You get an .srt subtitle file alongside the original video. Transcription runs in the background after recording stops — for a 5-min recording, expect ~5 min of background work on a typical laptop. Works for English by default; pick another language below for multilingual recordings."
+        />
+        <div className="settings__row">
+          <div className="preset-group">
+            <label>Language</label>
+            <select
+              className="text select"
+              value={settings.captionsLanguage}
+              onChange={(e) => void onUpdate({ captionsLanguage: e.target.value })}
+              disabled={!settings.captionsEnabled}
+            >
+              <option value="auto">Auto-detect</option>
+              <option value="en">English</option>
+              <option value="hi">Hindi</option>
+              <option value="es">Spanish</option>
+              <option value="fr">French</option>
+              <option value="de">German</option>
+              <option value="it">Italian</option>
+              <option value="pt">Portuguese</option>
+              <option value="ja">Japanese</option>
+              <option value="zh">Chinese</option>
+              <option value="ko">Korean</option>
+              <option value="ru">Russian</option>
+              <option value="ar">Arabic</option>
+            </select>
+          </div>
+          <div className="preset-group">
+            <label>Model</label>
+            <select
+              className="text select"
+              value={settings.captionsModel}
+              onChange={(e) =>
+                void onUpdate({ captionsModel: e.target.value as Settings['captionsModel'] })
+              }
+              disabled={!settings.captionsEnabled}
+            >
+              <option value="tiny.en">tiny (English) · ~75 MB · fastest</option>
+              <option value="base.en">base (English) · ~150 MB · recommended</option>
+              <option value="small.en">small (English) · ~470 MB · accurate</option>
+              <option value="tiny">tiny (multilingual) · ~75 MB</option>
+              <option value="base">base (multilingual) · ~150 MB</option>
+              <option value="small">small (multilingual) · ~470 MB</option>
+            </select>
+            <p className="muted small">
+              Models download once on first use and cache forever in the app's data folder.
+              English-only models are noticeably more accurate for English recordings.
+            </p>
+          </div>
+        </div>
+        <Toggle
+          label="Also save a separate MP4 with captions burned in"
+          value={settings.captionsBurnIn}
+          onChange={(v) => void onUpdate({ captionsBurnIn: v })}
+          hint="Generates a second video file alongside the original where the captions are part of the picture itself. Useful for sharing on platforms (WhatsApp, Twitter, etc.) that don't honour separate subtitle files. Original recording is never modified."
+        />
+      </div>
+
       <h2>Output</h2>
       <div className="settings__col">
         <FolderRow

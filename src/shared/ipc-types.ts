@@ -160,6 +160,23 @@ export interface IpcContract {
     response: void;
   };
 
+  [IpcChannel.CaptionsTranscribe]: {
+    request: import('./captions.types').CaptionsTranscribeRequest;
+    response: import('./captions.types').CaptionsTranscribeResponse;
+  };
+  [IpcChannel.CaptionsCancel]: {
+    request: { jobId: string };
+    response: void;
+  };
+  [IpcChannel.CaptionsStatus]: {
+    request: void;
+    response: import('./captions.types').CaptionsStatusResponse;
+  };
+  [IpcChannel.CaptionsEnsureRuntime]: {
+    request: void;
+    response: { ready: boolean; message: string };
+  };
+
   [IpcChannel.LicenseStatus]: { request: void; response: LicenseStatus };
   [IpcChannel.LicenseActivate]: {
     request: ActivateLicenseRequest;

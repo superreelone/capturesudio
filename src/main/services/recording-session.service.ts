@@ -123,12 +123,37 @@ export async function finalizeSession(
     durationMs: req.durationMs
   });
 
+  // Auto-trigger captions if enabled. Fire-and-forget — progress is reported
+  // via IPC events; this never blocks the recording finalize response.
+  if (settings.captionsEnabled) {
+    void triggerCaptionsForRecording(finalPath, req.durationMs);
+  }
+
   return {
     finalPath,
     filename: basename(finalPath),
     sizeBytes,
     durationMs: req.durationMs
   };
+}
+
+async function triggerCaptionsForRecording(
+  videoPath: string,
+  durationMs: number
+): Promise<void> {
+  try {
+    // Lazy require to keep the captions service out of recording's tightly
+    // coupled import graph; if the runtime is missing we fail soft.
+    const { startTranscribeJob } = await import('./captions.service');
+    const { isWhisperBinaryAvailable } = await import('./whisper.service');
+    if (!isWhisperBinaryAvailable()) {
+      log.warn('captions enabled but whisper runtime is not installed; skipping');
+      return;
+    }
+    startTranscribeJob({ videoPath, durationMs });
+  } catch (err) {
+    log.error('failed to trigger captions job', { err: String(err) });
+  }
 }
 
 export async function cancelSession(sessionId: string): Promise<void> {

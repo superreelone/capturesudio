@@ -28,6 +28,16 @@ export function App(): JSX.Element {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [showShortcuts, setShowShortcuts] = useState(false);
+  // Captions transcription status (banner under the UpdateBanner). null when
+  // no job is running. We accept up to one job at a time in the UI; the main
+  // process can run several but only the most recent shows here.
+  const [captionsStatus, setCaptionsStatus] = useState<{
+    phase: string;
+    percent: number;
+    message: string;
+    isDone: boolean;
+    isError: boolean;
+  } | null>(null);
 
   // Pending hotkey actions for the per-tab panels to consume.
   // We store a counter alongside so the same action can re-fire (e.g.
@@ -120,6 +130,46 @@ export function App(): JSX.Element {
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, [showShortcuts]);
+
+  // Captions event subscriptions — render a small banner with progress.
+  useEffect(() => {
+    const offProgress = window.api.events.onCaptionsProgress((ev) => {
+      setCaptionsStatus({
+        phase: ev.phase,
+        percent: ev.percent,
+        message: ev.message,
+        isDone: false,
+        isError: false
+      });
+    });
+    const offDone = window.api.events.onCaptionsDone((ev) => {
+      setCaptionsStatus({
+        phase: 'done',
+        percent: 1,
+        message: ev.captionedVideoPath
+          ? `Captions ready · SRT + burned-in MP4 saved next to ${ev.videoPath.split(/[/\\]/).pop()}`
+          : `Captions ready · SRT saved next to ${ev.videoPath.split(/[/\\]/).pop()}`,
+        isDone: true,
+        isError: false
+      });
+      // Auto-dismiss the success message after 10 seconds.
+      setTimeout(() => setCaptionsStatus((s) => (s?.isDone ? null : s)), 10_000);
+    });
+    const offError = window.api.events.onCaptionsError((ev) => {
+      setCaptionsStatus({
+        phase: 'error',
+        percent: 0,
+        message: `Captions failed: ${ev.message}`,
+        isDone: false,
+        isError: true
+      });
+    });
+    return () => {
+      offProgress();
+      offDone();
+      offError();
+    };
+  }, []);
 
   // Central handler for every global hotkey. Panels receive a queued action
   // instead of subscribing directly — so a hotkey works from any tab.
@@ -265,6 +315,33 @@ export function App(): JSX.Element {
 
       <main className="app__main app__main--stack">
         <UpdateBanner />
+        {captionsStatus && (
+          <div
+            className={`captions-banner${captionsStatus.isError ? ' captions-banner--error' : captionsStatus.isDone ? ' captions-banner--done' : ''}`}
+          >
+            <div className="captions-banner__row">
+              <span className="captions-banner__icon">
+                {captionsStatus.isError ? '⚠' : captionsStatus.isDone ? '✓' : '⟳'}
+              </span>
+              <span className="captions-banner__msg">{captionsStatus.message}</span>
+              <button
+                className="captions-banner__close"
+                onClick={() => setCaptionsStatus(null)}
+                aria-label="Dismiss"
+              >
+                ×
+              </button>
+            </div>
+            {!captionsStatus.isDone && !captionsStatus.isError && captionsStatus.percent > 0 && (
+              <div className="captions-banner__bar">
+                <div
+                  className="captions-banner__bar-fill"
+                  style={{ width: `${Math.round(captionsStatus.percent * 100)}%` }}
+                />
+              </div>
+            )}
+          </div>
+        )}
         {error && <p className="error">{error}</p>}
 
         {showActivationFull && license.status && (

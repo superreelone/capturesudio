@@ -20,6 +20,15 @@ files:
 asarUnpack:
   - node_modules/ffmpeg-static/**
 
+# whisper-cli binary + its DLLs are downloaded into resources/whisper/<platform>/
+# during prebuild (see tools/build-assets/download-whisper.mjs). They need to
+# land NEXT TO the asar so the spawned child process can find them by
+# `process.resourcesPath`.
+extraResources:
+  - from: "resources/whisper"
+    to: "whisper"
+    filter: ["**/*"]
+
 # Publish to GitHub Releases. Override per-CI with GH_TOKEN env var.
 # Owner + repo are pinned explicitly so the in-app auto-updater hits the right
 # URL even if package.json drifts.

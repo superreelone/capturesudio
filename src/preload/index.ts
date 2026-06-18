@@ -52,6 +52,14 @@ import type {
 import type { DiscoveredBluetoothDevice } from '@shared/bluetooth.types';
 import type { UpdateState } from '@shared/updater.types';
 import type { HotkeyAction, PartialSettings, Settings } from '@shared/settings.schema';
+import type {
+  CaptionsDoneEvent,
+  CaptionsErrorEvent,
+  CaptionsProgressEvent,
+  CaptionsStatusResponse,
+  CaptionsTranscribeRequest,
+  CaptionsTranscribeResponse
+} from '@shared/captions.types';
 
 const api = {
   app: {
@@ -158,6 +166,16 @@ const api = {
     install: (): Promise<void> => ipcRenderer.invoke(IpcChannel.UpdaterInstall),
     state: (): Promise<UpdateState> => ipcRenderer.invoke(IpcChannel.UpdaterState)
   },
+  captions: {
+    transcribe: (req: CaptionsTranscribeRequest): Promise<CaptionsTranscribeResponse> =>
+      ipcRenderer.invoke(IpcChannel.CaptionsTranscribe, req),
+    cancel: (jobId: string): Promise<void> =>
+      ipcRenderer.invoke(IpcChannel.CaptionsCancel, { jobId }),
+    status: (): Promise<CaptionsStatusResponse> =>
+      ipcRenderer.invoke(IpcChannel.CaptionsStatus),
+    ensureRuntime: (): Promise<{ ready: boolean; message: string }> =>
+      ipcRenderer.invoke(IpcChannel.CaptionsEnsureRuntime)
+  },
   events: {
     onHotkeyTriggered: (cb: (action: HotkeyAction) => void): (() => void) => {
       const listener = (_e: Electron.IpcRendererEvent, action: HotkeyAction): void => cb(action);
@@ -206,6 +224,22 @@ const api = {
       const listener = (_e: Electron.IpcRendererEvent, s: UpdateState): void => cb(s);
       ipcRenderer.on(IpcEvent.UpdaterStateChanged, listener);
       return () => ipcRenderer.removeListener(IpcEvent.UpdaterStateChanged, listener);
+    },
+    onCaptionsProgress: (cb: (ev: CaptionsProgressEvent) => void): (() => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, ev: CaptionsProgressEvent): void =>
+        cb(ev);
+      ipcRenderer.on(IpcEvent.CaptionsProgress, listener);
+      return () => ipcRenderer.removeListener(IpcEvent.CaptionsProgress, listener);
+    },
+    onCaptionsDone: (cb: (ev: CaptionsDoneEvent) => void): (() => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, ev: CaptionsDoneEvent): void => cb(ev);
+      ipcRenderer.on(IpcEvent.CaptionsDone, listener);
+      return () => ipcRenderer.removeListener(IpcEvent.CaptionsDone, listener);
+    },
+    onCaptionsError: (cb: (ev: CaptionsErrorEvent) => void): (() => void) => {
+      const listener = (_e: Electron.IpcRendererEvent, ev: CaptionsErrorEvent): void => cb(ev);
+      ipcRenderer.on(IpcEvent.CaptionsError, listener);
+      return () => ipcRenderer.removeListener(IpcEvent.CaptionsError, listener);
     }
   }
 };

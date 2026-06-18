@@ -22,3 +22,7 @@ windows installation instructions*.docx
 
 # TypeScript incremental build cache
 *.tsbuildinfo
+
+# Whisper.cpp binaries — downloaded fresh by tools/build-assets/download-whisper.mjs
+# on every build, no point committing them.
+resources/whisper/

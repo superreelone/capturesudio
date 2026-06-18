@@ -10,6 +10,7 @@ import { registerDrawingHandlers } from './drawing.handlers';
 import { registerLicenseHandlers } from './license.handlers';
 import { registerBluetoothHandlers } from './bluetooth.handlers';
 import { registerUpdaterHandlers } from './updater.handlers';
+import { registerCaptionsHandlers } from './captions.handlers';
 import { createLogger } from '@main/util/logger';
 
 const log = createLogger('ipc');
@@ -27,5 +28,6 @@ export function registerAllIpcHandlers(): void {
   registerLicenseHandlers();
   registerBluetoothHandlers();
   registerUpdaterHandlers();
+  registerCaptionsHandlers();
   log.info('all IPC handlers registered');
 }

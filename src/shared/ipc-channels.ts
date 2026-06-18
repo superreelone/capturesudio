@@ -44,6 +44,11 @@ export const IpcChannel = {
   DrawingListDisplays: 'drawing:listDisplays',
   DrawingSetIgnoreMouseEvents: 'drawing:setIgnoreMouseEvents',
 
+  CaptionsTranscribe: 'captions:transcribe',
+  CaptionsCancel: 'captions:cancel',
+  CaptionsStatus: 'captions:status',
+  CaptionsEnsureRuntime: 'captions:ensureRuntime',
+
   LicenseStatus: 'license:status',
   LicenseActivate: 'license:activate',
   LicenseDeactivate: 'license:deactivate',
@@ -69,5 +74,8 @@ export const IpcEvent = {
   DrawingStateChanged: 'evt:drawingStateChanged',
   LicenseStatusChanged: 'evt:licenseStatusChanged',
   BluetoothDevicesDiscovered: 'evt:bluetoothDevicesDiscovered',
-  UpdaterStateChanged: 'evt:updaterStateChanged'
+  UpdaterStateChanged: 'evt:updaterStateChanged',
+  CaptionsProgress: 'evt:captionsProgress',
+  CaptionsDone: 'evt:captionsDone',
+  CaptionsError: 'evt:captionsError'
 } as const;

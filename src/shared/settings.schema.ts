@@ -127,6 +127,10 @@ export const SettingsSchema = z.object({
   webcamBackgroundImagePath: z.string(),
   hideDrawingToolbarWhileRecording: z.boolean(),
   captureCompatibilityMode: z.boolean(),
+  captionsEnabled: z.boolean(),
+  captionsLanguage: z.string(),
+  captionsModel: z.enum(['tiny.en', 'base.en', 'small.en', 'tiny', 'base', 'small']),
+  captionsBurnIn: z.boolean(),
   bluetoothPenAction: BluetoothPenActionSchema,
   bluetoothPenDebounceMs: z.number().int().min(0).max(2000),
   crashReporterEnabled: z.boolean()
@@ -194,6 +198,10 @@ export function buildDefaultSettings(paths: {
     webcamBackgroundImagePath: '',
     hideDrawingToolbarWhileRecording: false,
     captureCompatibilityMode: false,
+    captionsEnabled: false,
+    captionsLanguage: 'auto',
+    captionsModel: 'base.en',
+    captionsBurnIn: true,
     bluetoothPenAction: 'toggleDrawing',
     bluetoothPenDebounceMs: 250,
     crashReporterEnabled: false

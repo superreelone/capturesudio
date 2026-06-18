@@ -1,7 +1,7 @@
 {
   "name": "ingestra-capturestudio",
   "productName": "Ingestra-CaptureStudio",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Cross-platform screen recorder + screenshot app for content creators",
   "main": "./out/main/index.js",
   "author": "Ingestra",
@@ -14,7 +14,8 @@
   "scripts": {
     "dev": "electron-vite dev",
     "assets:optimize": "node tools/build-assets/optimize-logo.mjs",
-    "prebuild": "npm run assets:optimize",
+    "assets:whisper": "node tools/build-assets/download-whisper.mjs",
+    "prebuild": "npm run assets:optimize && npm run assets:whisper",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
     "typecheck": "tsc --noEmit -p tsconfig.node.json && tsc --noEmit -p tsconfig.web.json",

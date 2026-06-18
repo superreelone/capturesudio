@@ -26,6 +26,7 @@ import {
   setUpdaterMainWindowAccessor,
   setupAutoUpdater
 } from './services/updater.service';
+import { setCaptionsMainWindowAccessor } from './services/captions.service';
 import { installCrashHandlers } from './services/crash.service';
 import { getSettings } from './services/settings.store';
 import {
@@ -176,6 +177,7 @@ setDrawingMainWindowAccessor(() => mainWindow);
 setLicenseWindowAccessor(() => mainWindow);
 setBluetoothMainWindowAccessor(() => mainWindow);
 setUpdaterMainWindowAccessor(() => mainWindow);
+setCaptionsMainWindowAccessor(() => mainWindow);
 
 app.whenReady().then(() => {
   log.info('app ready', { platform: process.platform, version: app.getVersion() });

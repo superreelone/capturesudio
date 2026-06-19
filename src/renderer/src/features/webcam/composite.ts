@@ -20,6 +20,8 @@ export interface WebcamConfig {
   borderWidth: number;
   /** Border colour — any value canvas strokeStyle accepts. */
   borderColor: string;
+  /** Live face centre in un-mirrored video coords; null = centred crop. */
+  getFaceCenter?: () => { x: number; y: number } | null;
 }
 
 export interface CompositeOptions {
@@ -172,14 +174,18 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
       // Crop-zoom: shrink the source rect into the source video so the same
       // destination rect renders a closer-cropped portion of the face/upper
       // body. zoom = 1 → use the whole frame; zoom = 2 → use centre quarter
-      // and scale up.
+      // and scale up. When face tracking is on, the source rect is centred
+      // on the detected face instead of the geometric centre.
       const camFullW = cam.el.videoWidth;
       const camFullH = cam.el.videoHeight;
       const zoom = Math.max(1, opts.webcamConfig.zoom);
       const srcW = camFullW / zoom;
       const srcH = camFullH / zoom;
-      const srcX = (camFullW - srcW) / 2;
-      const srcY = (camFullH - srcH) / 2;
+      const face = opts.webcamConfig.getFaceCenter?.() ?? null;
+      const targetCenterX = face ? face.x * camFullW : camFullW / 2;
+      const targetCenterY = face ? face.y * camFullH : camFullH / 2;
+      const srcX = Math.max(0, Math.min(camFullW - srcW, targetCenterX - srcW / 2));
+      const srcY = Math.max(0, Math.min(camFullH - srcH, targetCenterY - srcH / 2));
 
       ctx.save();
       if (opts.webcamConfig.shape === 'circle') {

@@ -6,12 +6,12 @@ import type {
   WebcamShape,
   WebcamSize
 } from '@shared/settings.schema';
-import type { WebcamState } from './useWebcam';
+import type { UseWebcamReturn } from './useWebcam';
 import { WebcamPreview } from './WebcamPreview';
 
 interface Props {
   settings: Settings;
-  webcam: WebcamState;
+  webcam: UseWebcamReturn;
   onUpdate: (patch: Partial<Settings>) => Promise<void>;
   disabled?: boolean;
 }
@@ -114,6 +114,9 @@ export function WebcamPanel({ settings, webcam, onUpdate, disabled }: Props): JS
                 zoom={settings.webcamZoom}
                 borderWidth={settings.webcamBorderWidth}
                 borderColor={settings.webcamBorderColor}
+                getFaceCenter={
+                  settings.webcamFaceTracking ? webcam.getFaceCenter : undefined
+                }
               />
             </div>
 
@@ -224,6 +227,15 @@ export function WebcamPanel({ settings, webcam, onUpdate, disabled }: Props): JS
                     Close-up
                   </button>
                 </div>
+                <label className="audio-row__dsp-item" style={{ marginTop: 6 }}>
+                  <input
+                    type="checkbox"
+                    checked={settings.webcamFaceTracking}
+                    onChange={(e) => void onUpdate({ webcamFaceTracking: e.target.checked })}
+                    disabled={disabled}
+                  />
+                  <span>Face tracking (centres the crop on your face)</span>
+                </label>
               </div>
               <div className="preset-group">
                 <label>Border ({settings.webcamBorderWidth}px)</label>

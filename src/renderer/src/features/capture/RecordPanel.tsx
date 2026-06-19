@@ -84,7 +84,8 @@ export function RecordPanel({
     deviceId: settings.webcamDeviceId,
     backgroundMode: settings.webcamBackgroundMode,
     backgroundBlurPx: settings.webcamBackgroundBlurPx,
-    backgroundImagePath: settings.webcamBackgroundImagePath
+    backgroundImagePath: settings.webcamBackgroundImagePath,
+    faceTracking: settings.webcamFaceTracking
   });
   const webcamRef = useRef(webcam);
   webcamRef.current = webcam;
@@ -269,7 +270,8 @@ export function RecordPanel({
           margin: settings.webcamMargin,
           zoom: settings.webcamZoom,
           borderWidth: settings.webcamBorderWidth,
-          borderColor: settings.webcamBorderColor
+          borderColor: settings.webcamBorderColor,
+          getFaceCenter: webcam.getFaceCenter
         }
       });
       compositorRef.current = compositor;

@@ -4,6 +4,7 @@ import {
   type ProcessorHandle,
   type WebcamBackgroundMode
 } from './backgroundProcessor';
+import { createFaceTracker, type FaceCenter, type FaceTrackerHandle } from './faceTracker';
 
 export interface WebcamState {
   enabled: boolean;
@@ -14,6 +15,11 @@ export interface WebcamState {
   permissionDenied: boolean;
   /** True while MediaPipe is downloading / initializing the segmenter. */
   backgroundLoading: boolean;
+}
+
+export interface UseWebcamReturn extends WebcamState {
+  /** Live face centre in un-mirrored video coords (0..1), null when off or unseen. */
+  getFaceCenter: () => FaceCenter | null;
 }
 
 const INITIAL: WebcamState = {
@@ -32,6 +38,8 @@ interface Options {
   backgroundBlurPx: number;
   /** Data URL or empty. The picker writes a data URL into settings. */
   backgroundImagePath: string;
+  /** Turn on MediaPipe face detection so the crop-zoom centres on the face. */
+  faceTracking: boolean;
 }
 
 export function useWebcam({
@@ -39,17 +47,35 @@ export function useWebcam({
   deviceId,
   backgroundMode,
   backgroundBlurPx,
-  backgroundImagePath
+  backgroundImagePath,
+  faceTracking
 }: Options) {
   const [state, setState] = useState<WebcamState>(INITIAL);
   const rawStreamRef = useRef<MediaStream | null>(null);
   const processorRef = useRef<ProcessorHandle | null>(null);
+  const faceTrackerRef = useRef<FaceTrackerHandle | null>(null);
   const [rawVersion, setRawVersion] = useState(0);
+
+  /** Stable callback exposed to compositor + preview. Returns null when
+   *  face-tracking is off or the tracker hasn't seen a face yet, in which
+   *  case the caller falls back to a centred crop. */
+  const getFaceCenterRef = useRef<() => FaceCenter | null>(() => null);
+  useEffect(() => {
+    getFaceCenterRef.current = (): FaceCenter | null =>
+      faceTrackerRef.current ? faceTrackerRef.current.getFaceCenter() : null;
+  }, []);
 
   const teardownProcessor = useCallback(() => {
     if (processorRef.current) {
       processorRef.current.dispose();
       processorRef.current = null;
+    }
+  }, []);
+
+  const teardownFaceTracker = useCallback(() => {
+    if (faceTrackerRef.current) {
+      faceTrackerRef.current.dispose();
+      faceTrackerRef.current = null;
     }
   }, []);
 
@@ -66,6 +92,7 @@ export function useWebcam({
 
     async function acquire(): Promise<void> {
       teardownProcessor();
+      teardownFaceTracker();
       stopRaw();
       if (!enabled) {
         setState((s) => ({ ...s, stream: null, error: null, enabled: false }));
@@ -168,6 +195,39 @@ export function useWebcam({
     };
   }, [backgroundMode, backgroundBlurPx, backgroundImagePath, rawVersion, teardownProcessor]);
 
+  // 2.5) Face-tracker lifecycle. Mirrors the bg processor lifecycle but is
+  //      independent of it — they share the same raw stream but each pulls
+  //      from it through their own hidden video element. We attach to the
+  //      *raw* stream, not the processor's output stream, because the bg
+  //      processor's output is masked + bg-replaced and the face detector
+  //      gets confused by the synthetic backgrounds.
+  useEffect(() => {
+    const raw = rawStreamRef.current;
+    if (!raw) return;
+    if (!faceTracking) {
+      teardownFaceTracker();
+      return;
+    }
+    if (faceTrackerRef.current) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const tracker = await createFaceTracker(raw);
+        if (cancelled) {
+          tracker.dispose();
+          return;
+        }
+        faceTrackerRef.current = tracker;
+      } catch (err) {
+        // Non-fatal — preview/compositor just fall back to centred crop.
+        console.warn('face tracker failed to start, falling back to centred crop', err);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [faceTracking, rawVersion, teardownFaceTracker]);
+
   // 3) Device-list refresh.
   useEffect(() => {
     let cancelled = false;
@@ -194,9 +254,10 @@ export function useWebcam({
   useEffect(() => {
     return () => {
       teardownProcessor();
+      teardownFaceTracker();
       stopRaw();
     };
-  }, [teardownProcessor, stopRaw]);
+  }, [teardownProcessor, teardownFaceTracker, stopRaw]);
 
-  return state;
+  return { ...state, getFaceCenter: getFaceCenterRef.current };
 }

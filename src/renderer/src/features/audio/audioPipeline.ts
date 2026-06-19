@@ -54,6 +54,13 @@ export class AudioPipeline {
     if (stream && stream.getAudioTracks().length > 0) {
       this.micSource = this.ctx.createMediaStreamSource(stream);
       this.micSource.connect(this.micGain);
+      // Defensive: if Chromium had suspended the context (e.g. our window
+      // wasn't focused at the moment of construction), the analyser would
+      // see no samples and the meter would freeze at silence. Re-resume
+      // anytime we connect a new source.
+      if (this.ctx.state === 'suspended') {
+        void this.ctx.resume().catch(() => undefined);
+      }
     }
   }
 

@@ -21,8 +21,15 @@ export function LevelMeter({ analyser, active, width = 160, height = 10 }: Props
       return;
     }
     const buffer = new Uint8Array(analyser.fftSize);
-    let raf = 0;
     let lastT = performance.now();
+    // setInterval, not requestAnimationFrame: rAF gets paused or throttled
+    // when the renderer is contested (e.g. CPU-delegate MediaPipe running the
+    // webcam background segmenter), which makes the meter look frozen at a
+    // static level even when the underlying mic signal is fine. setInterval
+    // is driven off Chromium's timer queue and (with backgroundThrottling
+    // disabled at the BrowserWindow level) keeps firing regardless of paint
+    // pressure. 30ms = ~33Hz, fast enough to feel responsive without burning
+    // CPU.
     const tick = (): void => {
       const level = analyserToLevel(analyser, buffer);
       // Visual: light compression for friendlier movement
@@ -45,11 +52,10 @@ export function LevelMeter({ analyser, active, width = 160, height = 10 }: Props
       if (peakBarRef.current) {
         peakBarRef.current.style.left = `${(peakRef.current * 100).toFixed(1)}%`;
       }
-
-      raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    const timer = window.setInterval(tick, 30);
+    tick(); // also paint immediately so the meter doesn't sit empty for 30ms
+    return () => window.clearInterval(timer);
   }, [analyser, active]);
 
   return (

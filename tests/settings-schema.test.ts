@@ -59,11 +59,12 @@ describe('SettingsSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects mic gain out of [0, 2]', () => {
+  it('rejects mic gain out of [0, 4]', () => {
     const d = buildDefaultSettings(DEFAULT_PATHS);
     expect(SettingsSchema.safeParse({ ...d, micGain: -0.1 }).success).toBe(false);
-    expect(SettingsSchema.safeParse({ ...d, micGain: 2.5 }).success).toBe(false);
+    expect(SettingsSchema.safeParse({ ...d, micGain: 4.5 }).success).toBe(false);
     expect(SettingsSchema.safeParse({ ...d, micGain: 1.5 }).success).toBe(true);
+    expect(SettingsSchema.safeParse({ ...d, micGain: 3.5 }).success).toBe(true);
   });
 
   it('PartialSettingsSchema accepts an empty object', () => {

@@ -107,12 +107,19 @@ export const SettingsSchema = z.object({
   bitratePreset: BitratePresetSchema,
   audioMode: AudioModeSchema,
   micDeviceId: z.string(),
-  micGain: z.number().min(0).max(2),
+  // 0..4: 1.0 = unity, 2.0 = +6dB, 4.0 = +12dB. Realistic ceiling for a Web
+  // Audio gain on a mic chain that already runs through compression — beyond
+  // ~4x distortion starts to be audible even on a clean source.
+  micGain: z.number().min(0).max(4),
   systemGain: z.number().min(0).max(2),
   audioMuted: z.boolean(),
   micNoiseSuppression: z.boolean(),
   micEchoCancellation: z.boolean(),
   micAutoGainControl: z.boolean(),
+  /** Enables a compressor + makeup-gain stage in the mic chain. Brings voice
+   *  up to broadcast-style loudness so recordings don't sound quieter than
+   *  Zoom/Voice-Recorder/etc. for the same mic. */
+  micVoiceBoost: z.boolean(),
   webcamEnabled: z.boolean(),
   webcamDeviceId: z.string(),
   webcamPosition: WebcamPositionSchema,
@@ -184,6 +191,7 @@ export function buildDefaultSettings(paths: {
     micNoiseSuppression: true,
     micEchoCancellation: true,
     micAutoGainControl: false,
+    micVoiceBoost: true,
     webcamEnabled: false,
     webcamDeviceId: '',
     webcamPosition: 'bottomRight',

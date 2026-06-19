@@ -1,7 +1,7 @@
 {
   "name": "ingestra-capturestudio",
   "productName": "Ingestra-CaptureStudio",
-  "version": "0.1.8",
+  "version": "0.1.9",
   "description": "Cross-platform screen recorder + screenshot app for content creators",
   "main": "./out/main/index.js",
   "author": "Ingestra",

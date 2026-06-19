@@ -58,11 +58,17 @@ export function useAudioPipeline(settings: Settings): UseAudioPipelineApi {
       pipelineRef.current.setMicGain(settings.micGain);
       pipelineRef.current.setSystemGain(settings.systemGain);
       pipelineRef.current.setMuted(settings.audioMuted);
+      pipelineRef.current.setVoiceBoost(settings.micVoiceBoost);
       setState((s) => ({ ...s, pipeline: pipelineRef.current }));
     }
     void pipelineRef.current.resume();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [wantsAudio]);
+
+  // Apply voice-boost toggle live.
+  useEffect(() => {
+    pipelineRef.current?.setVoiceBoost(settings.micVoiceBoost);
+  }, [settings.micVoiceBoost]);
 
   // Apply gain/mute changes live.
   useEffect(() => {

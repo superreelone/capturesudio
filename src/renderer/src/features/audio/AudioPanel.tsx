@@ -96,6 +96,15 @@ export function AudioPanel({
             <label className="audio-row__dsp-item">
               <input
                 type="checkbox"
+                checked={settings.micVoiceBoost}
+                onChange={(e) => void onUpdate({ micVoiceBoost: e.target.checked })}
+                disabled={disabled}
+              />
+              <span>Voice boost (compressor + makeup gain)</span>
+            </label>
+            <label className="audio-row__dsp-item">
+              <input
+                type="checkbox"
                 checked={settings.micNoiseSuppression}
                 onChange={(e) => void onUpdate({ micNoiseSuppression: e.target.checked })}
                 disabled={disabled}
@@ -122,8 +131,9 @@ export function AudioPanel({
             </label>
           </div>
           <p className="muted small">
-            Chromium-built preprocessing. Toggling re-acquires the mic; brief level-meter
-            blip is normal.
+            Voice boost is what makes recordings sound as loud as Zoom / Voice Recorder.
+            Keep it on for screen recordings. Toggling the others re-acquires the mic; brief
+            level-meter blip is normal.
           </p>
         </div>
       )}
@@ -209,7 +219,7 @@ function GainSlider({
       <input
         type="range"
         min={0}
-        max={2}
+        max={4}
         step={0.05}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}

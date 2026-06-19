@@ -1,8 +1,13 @@
 /**
  * Web Audio mixer:
- *   mic stream ─→ micGain ─→ micAnalyser ─┐
- *                                          ├─→ masterGain ─→ destination ─→ MediaStream
- *   sys stream ─→ sysGain ─→ sysAnalyser ─┘
+ *   mic stream ─→ micGain ─→ [boost: compressor → makeupGain] ─→ micAnalyser ─┐
+ *                                                                              ├→ masterGain → destination → MediaStream
+ *   sys stream ─→ sysGain ──────────────────────────────────→ sysAnalyser ────┘
+ *
+ * The optional voice-boost stage (DynamicsCompressorNode + makeup GainNode)
+ * brings the mic up to broadcast-style loudness so recordings don't sound
+ * 10 dB quieter than what Zoom/Voice-Recorder produce for the same hardware.
+ * When voice boost is disabled the chain reverts to raw micGain → analyser.
  *
  * Lifetime: own AudioContext; getMixedStream() returns the destination's MediaStream;
  * tracks survive across mode changes (we just rewire gain/source nodes).
@@ -15,7 +20,10 @@ export class AudioPipeline {
   readonly sysGain: GainNode;
   readonly micAnalyser: AnalyserNode;
   readonly sysAnalyser: AnalyserNode;
+  readonly micCompressor: DynamicsCompressorNode;
+  readonly micMakeupGain: GainNode;
 
+  private voiceBoost = true;
   private micSource: MediaStreamAudioSourceNode | null = null;
   private sysSource: MediaStreamAudioSourceNode | null = null;
   private currentMicStream: MediaStream | null = null;
@@ -30,14 +38,61 @@ export class AudioPipeline {
     this.masterGain.connect(this.destination);
 
     this.micGain = this.ctx.createGain();
+
+    // Voice-tuned compressor: pulls up quiet syllables and tames peaks. The
+    // values are a tested broadcast-voice preset — threshold high enough that
+    // background noise stays below the knee, ratio aggressive enough to keep
+    // dynamic range under control, attack/release fast enough to track speech
+    // without obvious pumping.
+    this.micCompressor = this.ctx.createDynamicsCompressor();
+    this.micCompressor.threshold.value = -22; // dB
+    this.micCompressor.knee.value = 24;
+    this.micCompressor.ratio.value = 6;
+    this.micCompressor.attack.value = 0.003;
+    this.micCompressor.release.value = 0.18;
+
+    // Makeup gain after compression. +9.5 dB ≈ 3x — pushes the compressed
+    // signal back up to perceived loudness comparable to other apps.
+    this.micMakeupGain = this.ctx.createGain();
+    this.micMakeupGain.gain.value = 3;
+
     this.micAnalyser = this.ctx.createAnalyser();
     this.micAnalyser.fftSize = 1024;
-    this.micGain.connect(this.micAnalyser).connect(this.masterGain);
+
+    this.wireMicChain();
 
     this.sysGain = this.ctx.createGain();
     this.sysAnalyser = this.ctx.createAnalyser();
     this.sysAnalyser.fftSize = 1024;
     this.sysGain.connect(this.sysAnalyser).connect(this.masterGain);
+  }
+
+  /** (Re)connect the mic processing chain based on the current boost mode.
+   *  Disconnects then reconnects so a live mid-stream toggle works. */
+  private wireMicChain(): void {
+    try {
+      this.micGain.disconnect();
+      this.micCompressor.disconnect();
+      this.micMakeupGain.disconnect();
+      this.micAnalyser.disconnect();
+    } catch {
+      // first call — nothing to disconnect yet
+    }
+    if (this.voiceBoost) {
+      this.micGain
+        .connect(this.micCompressor)
+        .connect(this.micMakeupGain)
+        .connect(this.micAnalyser)
+        .connect(this.masterGain);
+    } else {
+      this.micGain.connect(this.micAnalyser).connect(this.masterGain);
+    }
+  }
+
+  setVoiceBoost(enabled: boolean): void {
+    if (enabled === this.voiceBoost) return;
+    this.voiceBoost = enabled;
+    this.wireMicChain();
   }
 
   setMicStream(stream: MediaStream | null): void {

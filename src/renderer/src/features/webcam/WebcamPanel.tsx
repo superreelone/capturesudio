@@ -38,6 +38,13 @@ const BG_MODE_LABELS: Record<WebcamBackgroundMode, string> = {
 /** Hard ceiling so settings.json doesn't balloon. ~4 MB raw → ~5.4 MB base64. */
 const MAX_BG_IMAGE_BYTES = 4 * 1024 * 1024;
 
+/** Strip alpha from an #RRGGBB(AA) string so <input type="color"> accepts it. */
+function hexFromRgba(value: string): string {
+  if (/^#[0-9a-fA-F]{6}$/.test(value)) return value;
+  if (/^#[0-9a-fA-F]{8}$/.test(value)) return value.slice(0, 7);
+  return '#ffffff';
+}
+
 export function WebcamPanel({ settings, webcam, onUpdate, disabled }: Props): JSX.Element {
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -104,6 +111,9 @@ export function WebcamPanel({ settings, webcam, onUpdate, disabled }: Props): JS
                 mirror={settings.webcamMirror}
                 shape={settings.webcamShape}
                 size={160}
+                zoom={settings.webcamZoom}
+                borderWidth={settings.webcamBorderWidth}
+                borderColor={settings.webcamBorderColor}
               />
             </div>
 
@@ -171,6 +181,72 @@ export function WebcamPanel({ settings, webcam, onUpdate, disabled }: Props): JS
                   />
                   <span>Mirror (selfie view)</span>
                 </label>
+              </div>
+            </div>
+
+            <div className="presets webcam-presets">
+              <div className="preset-group">
+                <label>Framing ({Math.round(settings.webcamZoom * 100)}%)</label>
+                <div className="gain">
+                  <input
+                    type="range"
+                    min={1}
+                    max={3}
+                    step={0.05}
+                    value={settings.webcamZoom}
+                    onChange={(e) => void onUpdate({ webcamZoom: Number(e.target.value) })}
+                    disabled={disabled}
+                  />
+                </div>
+                <div className="seg">
+                  <button
+                    className={`seg__btn${settings.webcamZoom === 1 ? ' seg__btn--on' : ''}`}
+                    onClick={() => void onUpdate({ webcamZoom: 1 })}
+                    disabled={disabled}
+                    title="Show the whole webcam frame"
+                  >
+                    Wide
+                  </button>
+                  <button
+                    className={`seg__btn${settings.webcamZoom > 1 && settings.webcamZoom < 1.9 ? ' seg__btn--on' : ''}`}
+                    onClick={() => void onUpdate({ webcamZoom: 1.5 })}
+                    disabled={disabled}
+                    title="1.5× — head and shoulders"
+                  >
+                    Medium
+                  </button>
+                  <button
+                    className={`seg__btn${settings.webcamZoom >= 1.9 ? ' seg__btn--on' : ''}`}
+                    onClick={() => void onUpdate({ webcamZoom: 2 })}
+                    disabled={disabled}
+                    title="2× — close-up framing"
+                  >
+                    Close-up
+                  </button>
+                </div>
+              </div>
+              <div className="preset-group">
+                <label>Border ({settings.webcamBorderWidth}px)</label>
+                <div className="gain">
+                  <input
+                    type="range"
+                    min={0}
+                    max={12}
+                    step={1}
+                    value={settings.webcamBorderWidth}
+                    onChange={(e) =>
+                      void onUpdate({ webcamBorderWidth: Number(e.target.value) })
+                    }
+                    disabled={disabled}
+                  />
+                </div>
+                <input
+                  type="color"
+                  value={hexFromRgba(settings.webcamBorderColor)}
+                  onChange={(e) => void onUpdate({ webcamBorderColor: e.target.value })}
+                  disabled={disabled || settings.webcamBorderWidth === 0}
+                  title="Border colour"
+                />
               </div>
             </div>
 

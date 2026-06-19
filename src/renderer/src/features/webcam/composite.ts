@@ -14,6 +14,12 @@ export interface WebcamConfig {
   shape: WebcamShape;
   mirror: boolean;
   margin: number;
+  /** 1.0 = full frame, 2.0 = 2x crop-zoom (closer to face). */
+  zoom: number;
+  /** Border width in canvas px. 0 = no border. */
+  borderWidth: number;
+  /** Border colour — any value canvas strokeStyle accepts. */
+  borderColor: string;
 }
 
 export interface CompositeOptions {
@@ -163,6 +169,18 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
         cam.el.videoWidth,
         cam.el.videoHeight
       );
+      // Crop-zoom: shrink the source rect into the source video so the same
+      // destination rect renders a closer-cropped portion of the face/upper
+      // body. zoom = 1 → use the whole frame; zoom = 2 → use centre quarter
+      // and scale up.
+      const camFullW = cam.el.videoWidth;
+      const camFullH = cam.el.videoHeight;
+      const zoom = Math.max(1, opts.webcamConfig.zoom);
+      const srcW = camFullW / zoom;
+      const srcH = camFullH / zoom;
+      const srcX = (camFullW - srcW) / 2;
+      const srcY = (camFullH - srcH) / 2;
+
       ctx.save();
       if (opts.webcamConfig.shape === 'circle') {
         ctx.beginPath();
@@ -175,26 +193,34 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
       if (opts.webcamConfig.mirror) {
         ctx.translate(rect.x + rect.w, rect.y);
         ctx.scale(-1, 1);
-        ctx.drawImage(cam.el, 0, 0, rect.w, rect.h);
+        ctx.drawImage(cam.el, srcX, srcY, srcW, srcH, 0, 0, rect.w, rect.h);
       } else {
-        ctx.drawImage(cam.el, rect.x, rect.y, rect.w, rect.h);
+        ctx.drawImage(cam.el, srcX, srcY, srcW, srcH, rect.x, rect.y, rect.w, rect.h);
       }
       ctx.restore();
-      // Subtle frame
-      ctx.save();
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-      ctx.lineWidth = 2;
-      if (opts.webcamConfig.shape === 'circle') {
-        ctx.beginPath();
-        const cx = rect.x + rect.w / 2;
-        const cy = rect.y + rect.h / 2;
-        const r = Math.min(rect.w, rect.h) / 2;
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.stroke();
-      } else {
-        ctx.strokeRect(rect.x + 0.5, rect.y + 0.5, rect.w - 1, rect.h - 1);
+
+      // Configurable border. Drawn last so it sits on top of the picture
+      // regardless of clipping shape.
+      const bw = opts.webcamConfig.borderWidth;
+      if (bw > 0) {
+        ctx.save();
+        ctx.strokeStyle = opts.webcamConfig.borderColor;
+        ctx.lineWidth = bw;
+        // Inset by lineWidth/2 so the stroke sits inside the rect (canvas
+        // strokes straddle the path).
+        const inset = bw / 2;
+        if (opts.webcamConfig.shape === 'circle') {
+          ctx.beginPath();
+          const cx = rect.x + rect.w / 2;
+          const cy = rect.y + rect.h / 2;
+          const r = Math.min(rect.w, rect.h) / 2 - inset;
+          ctx.arc(cx, cy, r, 0, Math.PI * 2);
+          ctx.stroke();
+        } else {
+          ctx.strokeRect(rect.x + inset, rect.y + inset, rect.w - bw, rect.h - bw);
+        }
+        ctx.restore();
       }
-      ctx.restore();
     }
 
   }

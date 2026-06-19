@@ -266,7 +266,10 @@ export function RecordPanel({
           size: settings.webcamSize,
           shape: settings.webcamShape,
           mirror: settings.webcamMirror,
-          margin: settings.webcamMargin
+          margin: settings.webcamMargin,
+          zoom: settings.webcamZoom,
+          borderWidth: settings.webcamBorderWidth,
+          borderColor: settings.webcamBorderColor
         }
       });
       compositorRef.current = compositor;

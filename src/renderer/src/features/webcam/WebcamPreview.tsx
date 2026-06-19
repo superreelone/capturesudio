@@ -5,9 +5,21 @@ interface Props {
   mirror: boolean;
   shape: 'rect' | 'circle';
   size?: number;
+  /** Crop-zoom on the preview to match what the recording compositor does. */
+  zoom?: number;
+  borderWidth?: number;
+  borderColor?: string;
 }
 
-export function WebcamPreview({ stream, mirror, shape, size = 120 }: Props): JSX.Element {
+export function WebcamPreview({
+  stream,
+  mirror,
+  shape,
+  size = 120,
+  zoom = 1,
+  borderWidth = 0,
+  borderColor = '#ffffff80'
+}: Props): JSX.Element {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   useEffect(() => {
     const v = videoRef.current;
@@ -20,10 +32,21 @@ export function WebcamPreview({ stream, mirror, shape, size = 120 }: Props): JSX
     }
   }, [stream]);
 
+  // Compose transforms: mirror flips on X, zoom scales up — both off the
+  // centre so the cropped portion of the face stays framed.
+  const scale = Math.max(1, zoom);
+  const mirrorPart = mirror ? 'scaleX(-1) ' : '';
+  const transform = `${mirrorPart}scale(${scale})`;
+
   return (
     <div
       className={`webcam-preview${shape === 'circle' ? ' webcam-preview--circle' : ''}`}
-      style={{ width: size, height: size * 0.5625 }}
+      style={{
+        width: size,
+        height: size * 0.5625,
+        border: borderWidth > 0 ? `${borderWidth}px solid ${borderColor}` : undefined,
+        boxSizing: 'border-box'
+      }}
     >
       <video
         ref={videoRef}
@@ -31,7 +54,8 @@ export function WebcamPreview({ stream, mirror, shape, size = 120 }: Props): JSX
         playsInline
         autoPlay
         style={{
-          transform: mirror ? 'scaleX(-1)' : 'none',
+          transform,
+          transformOrigin: 'center',
           objectFit: 'cover'
         }}
       />

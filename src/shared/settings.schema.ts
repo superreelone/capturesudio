@@ -129,6 +129,12 @@ export const SettingsSchema = z.object({
   webcamShape: WebcamShapeSchema,
   webcamMirror: z.boolean(),
   webcamMargin: z.number().int().min(0).max(200),
+  /** Crop-zoom on the webcam feed. 1.0 = full frame, 2.0 = 2x close-up. */
+  webcamZoom: z.number().min(1).max(3),
+  /** Width of the border drawn around the PiP. 0 = no border. */
+  webcamBorderWidth: z.number().int().min(0).max(12),
+  /** CSS-style colour for the border (any string the canvas strokeStyle accepts). */
+  webcamBorderColor: z.string(),
   webcamBackgroundMode: WebcamBackgroundModeSchema,
   webcamBackgroundBlurPx: z.number().int().min(2).max(40),
   webcamBackgroundImagePath: z.string(),
@@ -201,6 +207,9 @@ export function buildDefaultSettings(paths: {
     webcamShape: 'rect',
     webcamMirror: true,
     webcamMargin: 24,
+    webcamZoom: 1.0,
+    webcamBorderWidth: 2,
+    webcamBorderColor: '#ffffff80',
     webcamBackgroundMode: 'none',
     webcamBackgroundBlurPx: 14,
     webcamBackgroundImagePath: '',

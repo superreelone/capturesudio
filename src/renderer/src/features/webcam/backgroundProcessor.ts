@@ -168,6 +168,12 @@ export async function createBackgroundProcessor(
 
   let timer = 0;
   let disposed = false;
+  // Re-entrancy guard. CPU-delegate MediaPipe can take 50-100ms per frame on
+  // a typical laptop, easily longer than our setInterval tick. Without this
+  // guard the event loop ends up servicing back-to-back segmenter calls with
+  // no breathing room — starving everything else in the renderer (the audio
+  // level meter, React updates, the captions banner) and recording itself.
+  let runningSegment = false;
 
   function paintBackground(): void {
     if (options.mode === 'blur') {
@@ -236,6 +242,9 @@ export async function createBackgroundProcessor(
 
   function loop(): void {
     if (disposed) return;
+    // Skip if we're still mid-frame from the previous tick. The next tick
+    // will pick up; we'd rather drop a frame than block the renderer.
+    if (runningSegment) return;
     if (video.readyState < 2 || video.videoWidth === 0) return;
 
     // Resize if the source video changes dimensions (rare but possible if device swaps).
@@ -251,19 +260,28 @@ export async function createBackgroundProcessor(
     }
 
     // Capture the current video frame for both color sample + segmentation.
-    frameCtx.drawImage(video, 0, 0, W, H);
+    runningSegment = true;
     try {
-      const result = segmenter.segmentForVideo(video, performance.now());
-      compositeMaskedFrame(result);
-    } catch (err) {
-      console.warn('segmentForVideo failed; passing through', err);
-      outCtx.drawImage(video, 0, 0, W, H);
+      frameCtx.drawImage(video, 0, 0, W, H);
+      try {
+        const result = segmenter.segmentForVideo(video, performance.now());
+        compositeMaskedFrame(result);
+      } catch (err) {
+        console.warn('segmentForVideo failed; passing through', err);
+        outCtx.drawImage(video, 0, 0, W, H);
+      }
+    } finally {
+      runningSegment = false;
     }
   }
-  // setInterval, not requestAnimationFrame — see composite.ts for why. The
-  // interval is sized so the segmenter actually has time to run on CPU
-  // delegate (a single frame takes 30-80ms on a typical laptop).
-  const intervalMs = Math.max(33, Math.round(1000 / Math.max(15, options.targetFps)));
+  // 100ms = 10fps. We *used* to fire at 33ms (30fps), but on CPU delegate a
+  // single segment-and-composite frame takes 50-100ms — way longer than the
+  // tick interval — and the queued backlog was blocking the renderer's main
+  // thread. The audio level meter (driven by rAF) and the main UI both
+  // starved as a result. 10fps webcam-PiP background processing is visually
+  // smooth enough for a small picture-in-picture and leaves the thread idle
+  // 70-90% of the time for everything else.
+  const intervalMs = 100;
   timer = window.setInterval(loop, intervalMs);
 
   const stream = outCanvas.captureStream(Math.max(15, options.targetFps));

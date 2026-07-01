@@ -21,6 +21,7 @@ import { AudioPanel } from '../audio/AudioPanel';
 import { useWebcam } from '../webcam/useWebcam';
 import { WebcamPanel } from '../webcam/WebcamPanel';
 import { createCompositor, type CompositorHandle } from '../webcam/composite';
+import { LiveCompositePreview } from './LiveCompositePreview';
 import { ExportDialog } from '../export/ExportDialog';
 import type { DrawingState } from '@shared/drawing.types';
 import { useLicense } from '../license/useLicense';
@@ -93,6 +94,9 @@ export function RecordPanel({
   const sourceVideoStreamRef = useRef<MediaStream | null>(null);
   const sourceAudioStreamRef = useRef<MediaStream | null>(null);
   const compositorRef = useRef<CompositorHandle | null>(null);
+  // State copy of compositorRef so React re-renders when the compositor is
+  // created / disposed. The live preview needs to mount + unmount with it.
+  const [liveCompositor, setLiveCompositor] = useState<CompositorHandle | null>(null);
 
   const [drawing, setDrawing] = useState<DrawingState>({
     open: false,
@@ -143,6 +147,7 @@ export function RecordPanel({
     if (compositorRef.current) {
       compositorRef.current.dispose();
       compositorRef.current = null;
+      setLiveCompositor(null);
     }
     if (sourceVideoStreamRef.current) {
       for (const t of sourceVideoStreamRef.current.getTracks()) t.stop();
@@ -275,6 +280,7 @@ export function RecordPanel({
         }
       });
       compositorRef.current = compositor;
+      setLiveCompositor(compositor);
 
       const videoTrack = compositor.stream.getVideoTracks()[0];
       if (!videoTrack) {
@@ -372,6 +378,34 @@ export function RecordPanel({
 
   const status = recorder.state.status;
   const recording = status === 'recording' || status === 'paused' || status === 'finalizing';
+
+  // Push any webcam-config setting change into the live compositor so drag
+  // + WebcamPanel edits reflect immediately without restarting recording.
+  useEffect(() => {
+    compositorRef.current?.updateWebcamConfig({
+      position: settings.webcamPosition,
+      customX: settings.webcamCustomX,
+      customY: settings.webcamCustomY,
+      size: settings.webcamSize,
+      shape: settings.webcamShape,
+      mirror: settings.webcamMirror,
+      margin: settings.webcamMargin,
+      zoom: settings.webcamZoom,
+      borderWidth: settings.webcamBorderWidth,
+      borderColor: settings.webcamBorderColor
+    });
+  }, [
+    settings.webcamPosition,
+    settings.webcamCustomX,
+    settings.webcamCustomY,
+    settings.webcamSize,
+    settings.webcamShape,
+    settings.webcamMirror,
+    settings.webcamMargin,
+    settings.webcamZoom,
+    settings.webcamBorderWidth,
+    settings.webcamBorderColor
+  ]);
 
   // Tell the drawing overlay (if open) what to render during recording.
   // `recording` always reflects the actual recorder state so the overlay can
@@ -496,6 +530,20 @@ export function RecordPanel({
             </div>
           </div>
         </div>
+      )}
+
+      {recording && liveCompositor && settings.webcamEnabled && (
+        <LiveCompositePreview
+          compositor={liveCompositor}
+          settings={settings}
+          onDrag={(customX, customY) => {
+            void onUpdateSettings({
+              webcamPosition: 'custom',
+              webcamCustomX: customX,
+              webcamCustomY: customY
+            });
+          }}
+        />
       )}
 
       <div className="record__bar">

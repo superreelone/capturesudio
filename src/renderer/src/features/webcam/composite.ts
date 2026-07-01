@@ -41,6 +41,13 @@ export interface CompositeOptions {
 
 export interface CompositorHandle {
   stream: MediaStream;
+  /** Update the webcam config mid-recording (drag-to-reposition uses this).
+   *  The next draw tick picks up the new values — no re-init cost. */
+  updateWebcamConfig: (patch: Partial<WebcamConfig>) => void;
+  /** Output canvas dimensions, so a drag preview can translate its client
+   *  coordinates back into the composite's coordinate space. */
+  outputWidth: number;
+  outputHeight: number;
   dispose: () => void;
 }
 
@@ -125,6 +132,12 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
   if (!ctxMaybe) throw new Error('canvas 2d context unavailable');
   const ctx: CanvasRenderingContext2D = ctxMaybe;
 
+  // Live-mutable config so drag / setting changes take effect on the next
+  // draw tick without having to re-init the compositor (which would restart
+  // the MediaRecorder because canvas.captureStream() ends the outbound track
+  // when the canvas is recreated).
+  const liveConfig: WebcamConfig = { ...opts.webcamConfig };
+
   const base = prepareVideo(opts.baseStream);
   const cam = opts.webcamStream ? prepareVideo(opts.webcamStream) : null;
 
@@ -165,7 +178,7 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
 
     if (cam && cam.el.readyState >= 2) {
       const rect = computeWebcamRect(
-        opts.webcamConfig,
+        liveConfig,
         canvas.width,
         canvas.height,
         cam.el.videoWidth,
@@ -178,17 +191,17 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
       // on the detected face instead of the geometric centre.
       const camFullW = cam.el.videoWidth;
       const camFullH = cam.el.videoHeight;
-      const zoom = Math.max(1, opts.webcamConfig.zoom);
+      const zoom = Math.max(1, liveConfig.zoom);
       const srcW = camFullW / zoom;
       const srcH = camFullH / zoom;
-      const face = opts.webcamConfig.getFaceCenter?.() ?? null;
+      const face = liveConfig.getFaceCenter?.() ?? null;
       const targetCenterX = face ? face.x * camFullW : camFullW / 2;
       const targetCenterY = face ? face.y * camFullH : camFullH / 2;
       const srcX = Math.max(0, Math.min(camFullW - srcW, targetCenterX - srcW / 2));
       const srcY = Math.max(0, Math.min(camFullH - srcH, targetCenterY - srcH / 2));
 
       ctx.save();
-      if (opts.webcamConfig.shape === 'circle') {
+      if (liveConfig.shape === 'circle') {
         ctx.beginPath();
         const cx = rect.x + rect.w / 2;
         const cy = rect.y + rect.h / 2;
@@ -196,7 +209,7 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         ctx.clip();
       }
-      if (opts.webcamConfig.mirror) {
+      if (liveConfig.mirror) {
         ctx.translate(rect.x + rect.w, rect.y);
         ctx.scale(-1, 1);
         ctx.drawImage(cam.el, srcX, srcY, srcW, srcH, 0, 0, rect.w, rect.h);
@@ -207,15 +220,15 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
 
       // Configurable border. Drawn last so it sits on top of the picture
       // regardless of clipping shape.
-      const bw = opts.webcamConfig.borderWidth;
+      const bw = liveConfig.borderWidth;
       if (bw > 0) {
         ctx.save();
-        ctx.strokeStyle = opts.webcamConfig.borderColor;
+        ctx.strokeStyle = liveConfig.borderColor;
         ctx.lineWidth = bw;
         // Inset by lineWidth/2 so the stroke sits inside the rect (canvas
         // strokes straddle the path).
         const inset = bw / 2;
-        if (opts.webcamConfig.shape === 'circle') {
+        if (liveConfig.shape === 'circle') {
           ctx.beginPath();
           const cx = rect.x + rect.w / 2;
           const cy = rect.y + rect.h / 2;
@@ -250,6 +263,11 @@ export function createCompositor(opts: CompositeOptions): CompositorHandle {
 
   return {
     stream,
+    outputWidth: canvas.width,
+    outputHeight: canvas.height,
+    updateWebcamConfig: (patch: Partial<WebcamConfig>) => {
+      Object.assign(liveConfig, patch);
+    },
     dispose: () => {
       if (disposed) return;
       disposed = true;
